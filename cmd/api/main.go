@@ -3,7 +3,7 @@ package main
 import (
 	"github.com/sergdort/Social/internal/db"
 	"github.com/sergdort/Social/internal/env"
-	store2 "github.com/sergdort/Social/internal/store"
+	"github.com/sergdort/Social/internal/store"
 	"log"
 )
 
@@ -36,11 +36,11 @@ func main() {
 
 	log.Println("database connection established")
 
-	var store = store2.NewStorage(database)
+	var s = store.NewStorage(database)
 
 	var app = &application{
 		config: cfg,
-		store:  store,
+		store:  s,
 	}
 
 	log.Fatal(app.run(app.mount()))
