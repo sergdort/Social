@@ -1,10 +1,10 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"github.com/go-chi/chi/v5"
 	"github.com/sergdort/Social/internal/store"
-	"golang.org/x/net/context"
 	"net/http"
 	"strconv"
 )
@@ -54,7 +54,6 @@ func (app *application) createPostsHandler(w http.ResponseWriter, r *http.Reques
 
 	if err := app.jsonResponse(w, http.StatusCreated, post); err != nil {
 		app.internalServerError(w, r, err)
-		return
 	}
 }
 
@@ -69,7 +68,9 @@ func (app *application) getPostHandler(w http.ResponseWriter, r *http.Request) {
 
 	post.Comments = comments
 
-	_ = app.jsonResponse(w, http.StatusOK, post)
+	if err := app.jsonResponse(w, http.StatusOK, post); err != nil {
+		app.internalServerError(w, r, err)
+	}
 }
 
 func (app *application) deletePostHandler(w http.ResponseWriter, r *http.Request) {
@@ -131,7 +132,7 @@ func (app *application) postsContextMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		var post, err2 = app.store.Posts.GetPostByID(r.Context(), postID)
+		var post, err2 = app.store.Posts.GetByID(r.Context(), postID)
 
 		if err2 != nil {
 			switch {

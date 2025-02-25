@@ -31,7 +31,7 @@ func (s *PostStore) Create(ctx context.Context, post *Post) error {
 	).Scan(&post.ID, &post.CreatedAt, &post.UpdatedAt)
 }
 
-func (s *PostStore) GetPostByID(ctx context.Context, id int64) (*Post, error) {
+func (s *PostStore) GetByID(ctx context.Context, id int64) (*Post, error) {
 	var query = `SELECT id, content, title, user_id, created_at, updated_at, tags, version FROM posts WHERE id = $1`
 
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)

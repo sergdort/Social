@@ -6,6 +6,8 @@
     <file url="file://$PROJECT_DIR$/cmd/migrate/migrations/000005_add_comments.up.sql" dialect="PostgreSQL" />
     <file url="file://$PROJECT_DIR$/cmd/migrate/migrations/000006_add_version_posts.down.sql" dialect="PostgreSQL" />
     <file url="file://$PROJECT_DIR$/cmd/migrate/migrations/000006_add_version_posts.up.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/cmd/migrate/migrations/000007_add_followers_table.up.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/cmd/migrate/migrations/000008_add_indexes.up.sql" dialect="PostgreSQL" />
     <file url="PROJECT" dialect="PostgreSQL" />
   </component>
 </project>
