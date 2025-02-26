@@ -17,6 +17,7 @@ type Storage struct {
 		GetByID(ctx context.Context, id int64) (*Post, error)
 		Delete(ctx context.Context, id int64) error
 		Update(ctx context.Context, post *Post) error
+		GetUserFeed(ctx context.Context, userId int64, query PaginatedFeedQuery) ([]PostWithMetadata, error)
 	}
 	Users interface {
 		Create(ctx context.Context, user *User) error
