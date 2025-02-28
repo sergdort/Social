@@ -3,7 +3,9 @@ package main
 import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/sergdort/Social/docs" // This is required to generate Swagger docs
 	store2 "github.com/sergdort/Social/internal/store"
+	httpSwagger "github.com/swaggo/http-swagger"
 	"log"
 	"net/http"
 	"time"
@@ -24,6 +26,7 @@ type config struct {
 	address string
 	db      dbConfig
 	env     string
+	apiURL  string
 }
 
 func (app *application) mount() http.Handler {
@@ -47,6 +50,7 @@ func (app *application) mount() http.Handler {
 
 	router.Route("/v1", func(r chi.Router) {
 		r.Get("/health", app.healthHandler)
+		r.Get("/swagger/*", httpSwagger.Handler())
 
 		r.Route("/posts", func(r chi.Router) {
 			r.Post("/", app.createPostsHandler)
@@ -77,6 +81,10 @@ func (app *application) mount() http.Handler {
 }
 
 func (app *application) run(mux http.Handler) error {
+	// Docs
+	docs.SwaggerInfo.Version = version
+	docs.SwaggerInfo.BasePath = "/v1"
+
 	server := &http.Server{
 		Addr:         app.config.address,
 		Handler:      mux,
