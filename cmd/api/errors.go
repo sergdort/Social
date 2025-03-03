@@ -1,21 +1,36 @@
 package main
 
 import (
-	"log"
 	"net/http"
+	"runtime"
 )
 
 func (app *application) internalServerError(w http.ResponseWriter, r *http.Request, err error) {
-	log.Printf("Internal server error method: %s path: %s error: %s", r.Method, r.URL.Path, err.Error())
+	pc, _, _, ok := runtime.Caller(1) // 1 means "who called this function"
+	caller := "unknown"
+	if ok {
+		caller = runtime.FuncForPC(pc).Name() // Get function name
+	}
+	app.logger.Errorw("Internal error", "caller", caller, "method", r.Method, "path", r.URL.Path, "error", err.Error())
 	_ = writeJSONError(w, http.StatusInternalServerError, "Internal Server Error")
 }
 
 func (app *application) badRequestResponse(w http.ResponseWriter, r *http.Request, err error) {
-	log.Printf("Bad Request error method: %s path: %s error: %s", r.Method, r.URL.Path, err.Error())
+	pc, _, _, ok := runtime.Caller(1) // 1 means "who called this function"
+	caller := "unknown"
+	if ok {
+		caller = runtime.FuncForPC(pc).Name() // Get function name
+	}
+	app.logger.Warnw("Bad request", "caller", caller, "method", r.Method, "path", r.URL.Path, "error", err.Error())
 	_ = writeJSONError(w, http.StatusBadRequest, err.Error())
 }
 
 func (app *application) notFoundResponse(w http.ResponseWriter, r *http.Request, err error) {
-	log.Printf("Not found method: %s path: %s error: %s", r.Method, r.URL.Path, err.Error())
+	pc, _, _, ok := runtime.Caller(1) // 1 means "who called this function"
+	caller := "unknown"
+	if ok {
+		caller = runtime.FuncForPC(pc).Name() // Get function name
+	}
+	app.logger.Warnw("Not found", "caller", caller, "method", r.Method, "path", r.URL.Path, "error", err.Error())
 	_ = writeJSONError(w, http.StatusNotFound, "Not found")
 }

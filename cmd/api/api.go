@@ -6,7 +6,7 @@ import (
 	"github.com/sergdort/Social/docs" // This is required to generate Swagger docs
 	store2 "github.com/sergdort/Social/internal/store"
 	httpSwagger "github.com/swaggo/http-swagger"
-	"log"
+	"go.uber.org/zap"
 	"net/http"
 	"time"
 )
@@ -21,6 +21,7 @@ type dbConfig struct {
 type application struct {
 	config config
 	store  store2.Storage
+	logger *zap.SugaredLogger
 }
 type config struct {
 	address string
@@ -93,7 +94,11 @@ func (app *application) run(mux http.Handler) error {
 		IdleTimeout:  time.Minute,
 	}
 
-	log.Printf("listening on %s", app.config.address)
+	app.logger.Infow(
+		"Server has started",
+		"addr", app.config.address,
+		"env", app.config.env,
+	)
 
 	return server.ListenAndServe()
 }
