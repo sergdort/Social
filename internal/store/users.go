@@ -14,6 +14,7 @@ type User struct {
 	Email     string   `json:"email"`
 	Password  password `json:"-"`
 	CreatedAt string   `json:"created_at"`
+	IsActive  bool     `json:"is_active"`
 }
 
 type password struct {
@@ -43,30 +44,16 @@ func (s *UserStore) Create(ctx context.Context, tx *sql.Tx, user *User) error {
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
 
 	defer cancel()
-	var err error
-	if tx == nil {
-		err = s.db.QueryRowContext(
-			ctx,
-			query,
-			user.Username,
-			user.Email,
-			user.Password.hash,
-		).Scan(
-			&user.ID,
-			&user.CreatedAt,
-		)
-	} else {
-		err = tx.QueryRowContext(
-			ctx,
-			query,
-			user.Username,
-			user.Email,
-			user.Password.hash,
-		).Scan(
-			&user.ID,
-			&user.CreatedAt,
-		)
-	}
+	err := tx.QueryRowContext(
+		ctx,
+		query,
+		user.Username,
+		user.Email,
+		user.Password.hash,
+	).Scan(
+		&user.ID,
+		&user.CreatedAt,
+	)
 
 	if err != nil {
 		switch {
@@ -79,6 +66,18 @@ func (s *UserStore) Create(ctx context.Context, tx *sql.Tx, user *User) error {
 		}
 	}
 	return nil
+}
+
+func (s *UserStore) RevertCreateAndInvite(ctx context.Context, id int64) error {
+	return withTransaction(s.db, ctx, func(tx *sql.Tx) error {
+		if err := deleteUser(ctx, id, tx); err != nil {
+			return err
+		}
+		if err := deleteInvitation(ctx, id, tx); err != nil {
+			return err
+		}
+		return nil
+	})
 }
 
 func (s *UserStore) GetByID(ctx context.Context, id int64) (*User, error) {
@@ -106,14 +105,51 @@ func (s *UserStore) CreateAndInvite(ctx context.Context, user *User, token strin
 			return err
 		}
 
-		if err := s.createUserInvitation(ctx, tx, token, user.ID, expiration); err != nil {
+		if err := createUserInvitation(ctx, tx, token, user.ID, expiration); err != nil {
 			return err
 		}
 		return nil
 	})
 }
 
-func (s *UserStore) createUserInvitation(
+func (s *UserStore) Activate(ctx context.Context, token string) error {
+	return withTransaction(s.db, ctx, func(tx *sql.Tx) error {
+		if err := activateUserByInvitationToken(ctx, token, tx); err != nil {
+			return err
+		}
+		if err := deleteUserInvitation(ctx, tx, token); err != nil {
+			return err
+		}
+		return nil
+	})
+}
+
+func activateUserByInvitationToken(ctx context.Context, token string, tx *sql.Tx) error {
+	query := `
+	UPDATE users u
+	SET is_active = TRUE
+	FROM user_invitations i
+	WHERE i.user_id = u.id
+	AND i.token = $1
+	AND i.expiry > $2
+	`
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+	defer cancel()
+
+	_, err := tx.ExecContext(ctx, query, token, time.Now())
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return ErrNotFound
+		default:
+			return err
+		}
+	}
+
+	return nil
+}
+
+func createUserInvitation(
 	ctx context.Context,
 	tx *sql.Tx,
 	token string,
@@ -129,4 +165,30 @@ func (s *UserStore) createUserInvitation(
 		return err
 	}
 	return nil
+}
+
+func deleteUserInvitation(ctx context.Context, tx *sql.Tx, token string) error {
+	query := `DELETE FROM user_invitations WHERE token = $1`
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+	defer cancel()
+	if _, err := tx.ExecContext(ctx, query, token); err != nil {
+		return err
+	}
+	return nil
+}
+
+func deleteUser(ctx context.Context, id int64, tx *sql.Tx) error {
+	var query = `DELETE FROM users WHERE id = $1`
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+	defer cancel()
+	_, err := tx.ExecContext(ctx, query, id)
+	return err
+}
+
+func deleteInvitation(ctx context.Context, userID int64, tx *sql.Tx) error {
+	var query = `DELETE FROM user_invitations WHERE user_id = $1`
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+	defer cancel()
+	_, err := tx.ExecContext(ctx, query, userID)
+	return err
 }

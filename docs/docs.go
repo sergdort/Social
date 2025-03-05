@@ -187,7 +187,7 @@ const docTemplate = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Delete a post by ID",
+                "description": "RevertCreateAndInvite a post by ID",
                 "consumes": [
                     "application/json"
                 ],

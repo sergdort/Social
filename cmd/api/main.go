@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/sergdort/Social/internal/db"
 	"github.com/sergdort/Social/internal/env"
+	"github.com/sergdort/Social/internal/mailer"
 	"github.com/sergdort/Social/internal/store"
 	"go.uber.org/zap"
 	"time"
@@ -38,12 +39,20 @@ func main() {
 		env:    env.GetString("ENV", "development"),
 		apiURL: env.GetString("EXTERNAL_URL", "http://localhost:8080"),
 		mail: mailConfig{
-			exp: time.Hour * 24 * 3,
+			exp:       time.Hour * 24 * 3,
+			fromEmail: env.GetString("SENDGRID_FROM_EMAIL", "<EMAIL>"),
+			sendGridConfig: sendGridConfig{
+				apiKey: env.GetString("SENDGRID_API_KEY", ""),
+			},
 		},
+		frontEndURL: env.GetString("FRONTEND_URL", "http://localhost:3000"),
 	}
 	// Logger
 	logger := zap.Must(zap.NewProduction()).Sugar()
 	defer logger.Sync()
+
+	// Mailer
+	mail := mailer.NewSendgridMailer(cfg.mail.fromEmail, cfg.mail.sendGridConfig.apiKey)
 
 	// Database
 	var database, err = db.New(
@@ -73,6 +82,7 @@ func main() {
 		config: cfg,
 		store:  s,
 		logger: logger,
+		mailer: mail,
 	}
 
 	logger.Fatal(app.run(app.mount()))

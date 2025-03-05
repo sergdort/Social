@@ -103,7 +103,7 @@ func (app *application) getPostHandler(w http.ResponseWriter, r *http.Request) {
 // DeletePost godoc
 //
 //	@Summary		Deletes a post
-//	@Description	Delete a post by ID
+//	@Description	RevertCreateAndInvite a post by ID
 //	@Tags			posts
 //	@Accept			json
 //	@Produce		json

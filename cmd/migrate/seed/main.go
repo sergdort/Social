@@ -14,5 +14,5 @@ func main() {
 		log.Fatal(err)
 	}
 	s := store.NewStorage(con)
-	db.Seed(s)
+	db.Seed(s, con)
 }

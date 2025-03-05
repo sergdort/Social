@@ -4,6 +4,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/sergdort/Social/docs" // This is required to generate Swagger docs
+	"github.com/sergdort/Social/internal/mailer"
 	store2 "github.com/sergdort/Social/internal/store"
 	httpSwagger "github.com/swaggo/http-swagger"
 	"go.uber.org/zap"
@@ -22,17 +23,25 @@ type application struct {
 	config config
 	store  store2.Storage
 	logger *zap.SugaredLogger
+	mailer mailer.Mailer
 }
 type config struct {
-	address string
-	db      dbConfig
-	env     string
-	apiURL  string
-	mail    mailConfig
+	address     string
+	db          dbConfig
+	env         string
+	apiURL      string
+	mail        mailConfig
+	frontEndURL string
 }
 
 type mailConfig struct {
-	exp time.Duration
+	exp            time.Duration
+	fromEmail      string
+	sendGridConfig sendGridConfig
+}
+
+type sendGridConfig struct {
+	apiKey string
 }
 
 func (app *application) mount() http.Handler {
@@ -70,6 +79,7 @@ func (app *application) mount() http.Handler {
 		})
 
 		r.Route("/users", func(r chi.Router) {
+			r.Put("/activate/{token}", app.activateUserHandler)
 			r.Route("/{userID}", func(r chi.Router) {
 				r.Use(app.userContextMiddleware)
 				r.Get("/", app.getUserHandler)
