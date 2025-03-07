@@ -9,7 +9,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/sergdort/Social/internal/mailer"
 	"github.com/sergdort/Social/internal/store"
+	"math/rand"
 	"net/http"
+	"time"
 )
 
 type RegisterUserPayload struct {
@@ -88,16 +90,14 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 		Username:      user.Username,
 		ActivationURL: activationURL,
 	}
-	if err := app.mailer.Send(mailer.UserWelcomeTemplate, user.Username, user.Email, vars); err != nil {
-		app.internalServerError(w, r, err)
-		app.logger.Errorw("Error sending welcome email: ", "error", err.Error(), "vars", vars)
 
-		// rollback user creation
-		if err := app.store.Users.RevertCreateAndInvite(ctx, user.ID); err != nil {
-			app.logger.Errorw("Error rolling back user creation: ", "error", err.Error(), "userID", user.ID)
-		}
-		return
-	}
+	go func() {
+		_ = retryRevert(4, func() error {
+			return app.mailer.Send(mailer.UserWelcomeTemplate, user.Username, user.Email, vars)
+		}, func() error {
+			return app.store.Users.RevertCreateAndInvite(ctx, user.ID)
+		})
+	}()
 
 	if err := app.jsonResponse(w, http.StatusCreated, response); err != nil {
 		app.internalServerError(w, r, err)
@@ -136,4 +136,24 @@ func hashToken(plainToken string) string {
 	hash := sha256.Sum256([]byte(plainToken))
 	hashToken := hex.EncodeToString(hash[:])
 	return hashToken
+}
+
+func retryRevert(times int, retry func() error, revert func() error) error {
+	for i := 0; i < times; i++ {
+		err := retry()
+		if err != nil {
+			exponentialBackoffWithJitter(i)
+			continue
+		}
+		return nil
+	}
+	return revert()
+}
+
+func exponentialBackoffWithJitter(retries int) {
+	for i := 0; i < retries; i++ {
+		sleepTime := time.Second * time.Duration(1<<i)              // 2^i seconds
+		jitter := time.Duration(rand.Intn(1000)) * time.Millisecond // Add up to 1s jitter
+		time.Sleep(sleepTime + jitter)
+	}
 }

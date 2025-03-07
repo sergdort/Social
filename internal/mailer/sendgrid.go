@@ -3,12 +3,9 @@ package mailer
 import (
 	"bytes"
 	"embed"
-	"fmt"
 	"github.com/sendgrid/sendgrid-go"
 	"github.com/sendgrid/sendgrid-go/helpers/mail"
 	"html/template"
-	"log"
-	"time"
 )
 
 const (
@@ -51,21 +48,13 @@ func (m *SendgridMailer) Send(templateFile, username, email string, data any) er
 
 	body := new(bytes.Buffer)
 
-	err = tmpl.ExecuteTemplate(body, "body", data)
+	if err = tmpl.ExecuteTemplate(body, "body", data); err != nil {
+		return err
+	}
 
 	message := mail.NewSingleEmail(from, subject.String(), to, "", body.String())
 
-	for i := 0; i < MaxRetries; i++ {
-		_, err := m.client.Send(message)
-		if err != nil {
-			log.Printf("Error sending email: %v, attempt %d", email, i+1)
-			log.Printf("Error: %v", err.Error())
+	_, err = m.client.Send(message)
 
-			time.Sleep(time.Second * time.Duration(i+1))
-			continue
-		}
-		return nil
-	}
-
-	return fmt.Errorf("error sending email")
+	return err
 }
