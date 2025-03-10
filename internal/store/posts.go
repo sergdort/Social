@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"github.com/lib/pq"
+	"github.com/sergdort/Social/internal/store/sqlc"
 )
 
 type Post struct {
@@ -22,11 +23,12 @@ type Post struct {
 
 type PostWithMetadata struct {
 	Post
-	CommentsCount int `json:"comments_count"`
+	CommentsCount int64 `json:"comments_count"`
 }
 
 type PostStore struct {
-	db *sql.DB
+	db      *sql.DB
+	queries *sqlc.Queries
 }
 
 func (s *PostStore) Create(ctx context.Context, post *Post) error {
@@ -38,24 +40,11 @@ func (s *PostStore) Create(ctx context.Context, post *Post) error {
 }
 
 func (s *PostStore) GetByID(ctx context.Context, id int64) (*Post, error) {
-	var query = `SELECT id, content, title, user_id, created_at, updated_at, tags, version FROM posts WHERE id = $1`
-
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
 
 	defer cancel()
 
-	var post Post
-	var err = s.db.QueryRowContext(ctx, query, id).Scan(
-		&post.ID,
-		&post.Content,
-		&post.Title,
-		&post.UserID,
-		&post.CreatedAt,
-		&post.UpdatedAt,
-		pq.Array(&post.Tags),
-		&post.Version,
-	)
-
+	row, err := s.queries.GetPostByID(ctx, id)
 	if err != nil {
 		switch {
 		case errors.Is(err, sql.ErrNoRows):
@@ -64,7 +53,16 @@ func (s *PostStore) GetByID(ctx context.Context, id int64) (*Post, error) {
 			return nil, err
 		}
 	}
-	return &post, nil
+	return &Post{
+		ID:        row.ID,
+		Content:   row.Content,
+		Title:     row.Title,
+		UserID:    row.UserID,
+		CreatedAt: row.CreatedAt.String(),
+		UpdatedAt: row.UpdatedAt.String(),
+		Tags:      row.Tags,
+		Version:   int64(row.Version.Int32),
+	}, nil
 }
 
 func (s *PostStore) Delete(ctx context.Context, id int64) error {
@@ -122,65 +120,42 @@ func (s *PostStore) Update(ctx context.Context, post *Post) error {
 }
 
 func (s *PostStore) GetUserFeed(ctx context.Context, userId int64, q PaginatedFeedQuery) ([]PostWithMetadata, error) {
-	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
-	defer cancel()
-
-	query := `
-	SELECT
-		p.id,
-		p.user_id,
-		p.title,
-		p.content,
-		p.created_at,
-		p.tags,
-		COUNT(c.id) AS comments_count,
-		u.username
-	FROM
-		posts p
-		LEFT JOIN comments c ON c.post_id = p.id
-		LEFT JOIN users u ON p.user_id = u.id
-		JOIN followers f ON f.follower_id = p.user_id
-		OR p.user_id = $1 OR p.user_id = $1
-	WHERE
-		(f.user_id = $1 OR p.user_id = $1) AND
-		(p.title ILIKE '%' || $4 || '%' OR p.content ILIKE '%' || $4 || '%') AND
-		(p.tags @> $5 OR $5 = '{}')
-	GROUP BY
-		p.id, u.username
-	ORDER BY
-		p.created_at ` + q.SortBy + ` LIMIT $2 OFFSET $3`
-
-	rows, err := s.db.QueryContext(ctx, query, userId, q.Limit, q.Offset, q.Search, pq.Array(q.Tags))
-
+	feed, err := s.queries.GetUserFeed(ctx, sqlc.GetUserFeedParams{
+		UserID:  userId,
+		Limit:   int32(q.Limit),
+		Offset:  int32(q.Offset),
+		Column4: q.Search,
+		Tags:    q.Tags,
+	})
 	if err != nil {
 		return nil, err
 	}
-
-	defer rows.Close()
-
-	var postsWithMetadata []PostWithMetadata
-
-	for rows.Next() {
-		var postWithMetadata PostWithMetadata
-		var user User
-		err = rows.Scan(
-			&postWithMetadata.Post.ID,
-			&postWithMetadata.Post.UserID,
-			&postWithMetadata.Post.Title,
-			&postWithMetadata.Post.Content,
-			&postWithMetadata.Post.CreatedAt,
-			pq.Array(&postWithMetadata.Post.Tags),
-			&postWithMetadata.CommentsCount,
-			&user.Username,
-		)
-		user.ID = postWithMetadata.Post.UserID
-		postWithMetadata.Post.User = user
-
-		if err != nil {
-			return nil, err
-		}
-		postsWithMetadata = append(postsWithMetadata, postWithMetadata)
-	}
-
+	postsWithMetadata := Map(feed, convertToPostWithMetadata)
 	return postsWithMetadata, nil
+}
+
+func convertToPostWithMetadata(feedRow sqlc.GetUserFeedRow) PostWithMetadata {
+	return PostWithMetadata{
+		Post: Post{
+			ID:        feedRow.ID,
+			Content:   feedRow.Content,
+			Title:     feedRow.Title,
+			UserID:    feedRow.UserID,
+			CreatedAt: feedRow.CreatedAt.String(),
+			Tags:      feedRow.Tags,
+			User: User{
+				ID:       feedRow.UserID,
+				Username: feedRow.Username.String,
+			},
+		},
+		CommentsCount: feedRow.CommentsCount,
+	}
+}
+
+func Map[T any, U any](input []T, mapper func(T) U) []U {
+	result := make([]U, len(input))
+	for i, v := range input {
+		result[i] = mapper(v)
+	}
+	return result
 }

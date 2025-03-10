@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"github.com/sergdort/Social/internal/store/sqlc"
 	"time"
 )
 
@@ -40,7 +41,7 @@ type Storage struct {
 
 func NewStorage(db *sql.DB) Storage {
 	return Storage{
-		Posts:    &PostStore{db},
+		Posts:    &PostStore{db, sqlc.New(db)},
 		Users:    &UserStore{db},
 		Comments: &CommentStore{db},
 		Follows:  &FollowsStore{db},
