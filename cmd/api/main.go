@@ -45,7 +45,13 @@ func main() {
 				apiKey: env.GetString("SENDGRID_API_KEY", ""),
 			},
 		},
-		frontEndURL: env.GetString("FRONTEND_URL", "http://localhost:3000"),
+		frontEndURL: env.GetString("FRONTEND_URL", "http://localhost:5173"),
+		auth: authConfig{
+			basic: basicAuthConfig{
+				username: env.GetString("AUTH_BASIC_USERNAME", "admin"),
+				password: env.GetString("AUTH_BASIC_PASSWORD", "admin"),
+			},
+		},
 	}
 	// Logger
 	logger := zap.Must(zap.NewProduction()).Sugar()

@@ -34,3 +34,14 @@ func (app *application) notFoundResponse(w http.ResponseWriter, r *http.Request,
 	app.logger.Warnw("Not found", "caller", caller, "method", r.Method, "path", r.URL.Path, "error", err.Error())
 	_ = writeJSONError(w, http.StatusNotFound, "Not found")
 }
+
+func (app *application) unauthorizedBasicErrorResponse(w http.ResponseWriter, r *http.Request, err error) {
+	pc, _, _, ok := runtime.Caller(1)
+	caller := "unknown"
+	if ok {
+		caller = runtime.FuncForPC(pc).Name() // Get function name
+	}
+	app.logger.Warnw("Unauthorized", "caller", caller, "method", r.Method, "path", r.URL.Path, "error", err.Error())
+	w.Header().Set("WWW-Authenticate", `Basic realm="api", charset="UTF-8"`)
+	_ = writeJSONError(w, http.StatusUnauthorized, err.Error())
+}

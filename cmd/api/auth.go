@@ -31,8 +31,8 @@ type InvitationTokenResponse struct {
 //	@Tags			authentication
 //	@Accept			json
 //	@Produce		json
-//	@Param			payload	body		RegisterUserPayload	true	"User credentials"
-//	@Success		201		{object}	InvitationTokenResponse			"User registered"
+//	@Param			payload	body		RegisterUserPayload		true	"User credentials"
+//	@Success		201		{object}	InvitationTokenResponse	"User registered"
 //	@Failure		400		{object}	error
 //	@Failure		500		{object}	error
 //	@Router			/authentication/user [post]
