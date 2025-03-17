@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"github.com/sergdort/Social/internal/store/sqlc"
 	"golang.org/x/crypto/bcrypt"
 	"time"
 )
@@ -34,8 +35,13 @@ func (p *password) Set(text string) error {
 	return nil
 }
 
+func (p *password) Verify(text string) error {
+	return bcrypt.CompareHashAndPassword(p.hash, []byte(text))
+}
+
 type UserStore struct {
-	db *sql.DB
+	db      *sql.DB
+	queries *sqlc.Queries
 }
 
 func (s *UserStore) Create(ctx context.Context, tx *sql.Tx, user *User) error {
@@ -96,6 +102,27 @@ func (s *UserStore) GetByID(ctx context.Context, id int64) (*User, error) {
 		}
 	}
 
+	return &user, nil
+}
+
+func (s *UserStore) GetByEmail(ctx context.Context, email string) (*User, error) {
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+	defer cancel()
+
+	row, err := s.queries.GetUserByEmail(ctx, email)
+	if err != nil {
+		return nil, err
+	}
+	user := User{
+		ID:       row.ID,
+		Username: row.Username,
+		Email:    row.Email,
+		Password: password{
+			hash: row.Password,
+		},
+		CreatedAt: row.CreatedAt.String(),
+		IsActive:  row.IsActive,
+	}
 	return &user, nil
 }
 

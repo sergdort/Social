@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/sergdort/Social/internal/auth"
 	"github.com/sergdort/Social/internal/db"
 	"github.com/sergdort/Social/internal/env"
 	"github.com/sergdort/Social/internal/mailer"
@@ -51,6 +52,11 @@ func main() {
 				username: env.GetString("AUTH_BASIC_USERNAME", "admin"),
 				password: env.GetString("AUTH_BASIC_PASSWORD", "admin"),
 			},
+			jwt: jwtAuthConfig{
+				secret:    env.GetString("JWT_SECRET", "secret"),
+				exp:       time.Hour * 24 * 7,
+				tokenHost: env.GetString("JWT_TOKEN_HOST", "social"),
+			},
 		},
 	}
 	// Logger
@@ -84,11 +90,18 @@ func main() {
 
 	var s = store.NewStorage(database)
 
+	var authenticator = auth.NewJWTAutheticator(
+		cfg.auth.jwt.secret,
+		cfg.auth.jwt.tokenHost,
+		cfg.auth.jwt.tokenHost,
+	)
+
 	var app = &application{
-		config: cfg,
-		store:  s,
-		logger: logger,
-		mailer: mail,
+		config:        cfg,
+		store:         s,
+		logger:        logger,
+		mailer:        mail,
+		authenticator: authenticator,
 	}
 
 	logger.Fatal(app.run(app.mount()))

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/go-chi/chi/v5"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/sergdort/Social/internal/mailer"
 	"github.com/sergdort/Social/internal/store"
@@ -22,6 +23,11 @@ type RegisterUserPayload struct {
 
 type InvitationTokenResponse struct {
 	Token string `json:"token"`
+}
+
+type CreateUserTokenPayload struct {
+	Email    string `json:"email" validate:"required,email,max=255"`
+	Password string `json:"password" validate:"required,min=3,max=72"`
 }
 
 // registerUserHandler godoc
@@ -130,6 +136,70 @@ func (app *application) activateUserHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// createTokenHandler godoc
+//
+//	@Summary		Creates a token
+//	@Description	Creates a token for a user
+//	@Tags			authentication
+//	@Accept			json
+//	@Produce		json
+//	@Param			payload	body		CreateUserTokenPayload	true	"User credentials"
+//	@Success		200		{string}	string					"Token"
+//	@Failure		400		{object}	error
+//	@Failure		401		{object}	error
+//	@Failure		500		{object}	error
+//	@Router			/authentication/token [post]
+func (app *application) createTokenHandler(w http.ResponseWriter, r *http.Request) {
+	// parse the payload creds
+	var payload CreateUserTokenPayload
+	if err := readJSON(w, r, &payload); err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+	// check if the user exists
+	user, err := app.store.Users.GetByEmail(r.Context(), payload.Email)
+	if err != nil {
+		switch {
+		case errors.Is(err, store.ErrNotFound):
+			app.unauthorizedErrorResponse(w, r, fmt.Errorf("invalid email or password"))
+		default:
+			app.internalServerError(w, r, err)
+		}
+		return
+	}
+	if err := user.Password.Verify(payload.Password); err != nil {
+		app.badRequestResponse(w, r, fmt.Errorf("invalid email or password"))
+		return
+	}
+	// generate the token -> add claims
+
+	claims := jwt.MapClaims{
+		"sub": user.ID,
+		"exp": time.Now().Add(app.config.auth.jwt.exp).Unix(),
+		"iat": time.Now().Unix(),
+		"nbf": time.Now().Add(app.config.auth.jwt.exp).Unix(),
+		"iss": app.config.auth.jwt.tokenHost,
+		"aud": app.config.auth.jwt.tokenHost,
+	}
+	token, err := app.authenticator.GenerateToken(claims)
+
+	if err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+
+	// send it to the client
+
+	if err := app.jsonResponse(w, http.StatusCreated, struct {
+		Token string `json:"token"`
+	}{
+		Token: token,
+	}); err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
 }
 
 func hashToken(plainToken string) string {

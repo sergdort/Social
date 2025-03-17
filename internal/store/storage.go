@@ -25,6 +25,7 @@ type Storage struct {
 	Users interface {
 		Create(ctx context.Context, tx *sql.Tx, user *User) error
 		GetByID(ctx context.Context, id int64) (*User, error)
+		GetByEmail(ctx context.Context, email string) (*User, error)
 		CreateAndInvite(ctx context.Context, user *User, token string, expiration time.Duration) error
 		RevertCreateAndInvite(ctx context.Context, id int64) error
 		Activate(ctx context.Context, token string) error
@@ -42,7 +43,7 @@ type Storage struct {
 func NewStorage(db *sql.DB) Storage {
 	return Storage{
 		Posts:    &PostStore{db, sqlc.New(db)},
-		Users:    &UserStore{db},
+		Users:    &UserStore{db, sqlc.New(db)},
 		Comments: &CommentStore{db},
 		Follows:  &FollowsStore{db},
 	}

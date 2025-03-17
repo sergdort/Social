@@ -41,7 +41,17 @@ func (app *application) unauthorizedBasicErrorResponse(w http.ResponseWriter, r 
 	if ok {
 		caller = runtime.FuncForPC(pc).Name() // Get function name
 	}
-	app.logger.Warnw("Unauthorized", "caller", caller, "method", r.Method, "path", r.URL.Path, "error", err.Error())
+	app.logger.Warnw("Unauthorized Basic", "caller", caller, "method", r.Method, "path", r.URL.Path, "error", err.Error())
 	w.Header().Set("WWW-Authenticate", `Basic realm="api", charset="UTF-8"`)
+	_ = writeJSONError(w, http.StatusUnauthorized, err.Error())
+}
+
+func (app *application) unauthorizedErrorResponse(w http.ResponseWriter, r *http.Request, err error) {
+	pc, _, _, ok := runtime.Caller(1)
+	caller := "unknown"
+	if ok {
+		caller = runtime.FuncForPC(pc).Name() // Get function name
+	}
+	app.logger.Warnw("Unauthorized", "caller", caller, "method", r.Method, "path", r.URL.Path, "error", err.Error())
 	_ = writeJSONError(w, http.StatusUnauthorized, err.Error())
 }

@@ -1,3 +1,8 @@
+-- name: GetUserByEmail :one
+SELECT id, email, password, username, created_at, is_active
+FROM users
+WHERE email = $1;
+
 -- name: GetPostByID :one
 SELECT id,
        content,

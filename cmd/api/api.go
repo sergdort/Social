@@ -5,6 +5,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 	"github.com/sergdort/Social/docs" // This is required to generate Swagger docs
+	"github.com/sergdort/Social/internal/auth"
 	"github.com/sergdort/Social/internal/mailer"
 	store2 "github.com/sergdort/Social/internal/store"
 	httpSwagger "github.com/swaggo/http-swagger"
@@ -21,10 +22,11 @@ type dbConfig struct {
 }
 
 type application struct {
-	config config
-	store  store2.Storage
-	logger *zap.SugaredLogger
-	mailer mailer.Mailer
+	config        config
+	store         store2.Storage
+	logger        *zap.SugaredLogger
+	mailer        mailer.Mailer
+	authenticator auth.Authenticator
 }
 type config struct {
 	address     string
@@ -44,10 +46,17 @@ type mailConfig struct {
 
 type authConfig struct {
 	basic basicAuthConfig
+	jwt   jwtAuthConfig
 }
 type basicAuthConfig struct {
 	username string
 	password string
+}
+
+type jwtAuthConfig struct {
+	secret    string
+	exp       time.Duration
+	tokenHost string
 }
 
 type sendGridConfig struct {
@@ -115,6 +124,7 @@ func (app *application) mount() http.Handler {
 
 		r.Route("/authentication", func(r chi.Router) {
 			r.Post("/user", app.registerUserHandler)
+			r.Post("/token", app.createTokenHandler)
 		})
 	})
 

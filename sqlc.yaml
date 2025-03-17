@@ -1,7 +1,7 @@
 version: "2"
 sql:
   - engine: "postgresql"
-    queries: "internal/store/sqlc/query.sqlc"
+    queries: "internal/store/sqlc/query.sql"
     schema: "cmd/migrate/migrations"
     gen:
       go:
