@@ -53,15 +53,11 @@ func (app *application) getUserHandler(w http.ResponseWriter, r *http.Request) {
 //	@Security		ApiKeyAuth
 //	@Router			/users/{id}/follow [put]
 func (app *application) followUserHandler(w http.ResponseWriter, r *http.Request) {
-	followedUser := getUserFromContext(r)
-	// TODO: Revert back to auth userID from ctx
-	var payload FollowUser
-	if err := readJSON(w, r, &payload); err != nil {
-		app.badRequestResponse(w, r, err)
-		return
-	}
+	ctx := r.Context()
+	currentUser := GetAuthUserFromContext(ctx)
+	userToFollow := getUserFromContext(r)
 
-	if err := app.store.Follows.Follow(r.Context(), payload.UserId, followedUser.ID); err != nil {
+	if err := app.store.Follows.Follow(ctx, currentUser.ID, userToFollow.ID); err != nil {
 		app.internalServerError(w, r, err)
 		return
 	}
@@ -82,15 +78,11 @@ func (app *application) followUserHandler(w http.ResponseWriter, r *http.Request
 //	@Security		ApiKeyAuth
 //	@Router			/users/{id}/unfollow [put]
 func (app *application) unfollowUserHandler(w http.ResponseWriter, r *http.Request) {
-	followedUser := getUserFromContext(r)
-	// TODO: Revert back to auth userID from ctx
-	var payload FollowUser
-	if err := readJSON(w, r, &payload); err != nil {
-		app.badRequestResponse(w, r, err)
-		return
-	}
+	ctx := r.Context()
+	currentUser := GetAuthUserFromContext(ctx)
+	userToUnfollow := getUserFromContext(r)
 
-	if err := app.store.Follows.Unfollow(r.Context(), payload.UserId, followedUser.ID); err != nil {
+	if err := app.store.Follows.Unfollow(ctx, currentUser.ID, userToUnfollow.ID); err != nil {
 		app.internalServerError(w, r, err)
 		return
 	}

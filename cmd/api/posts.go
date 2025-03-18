@@ -39,7 +39,6 @@ type UpdatePostPayload struct {
 //	@Security		ApiKeyAuth
 //	@Router			/posts/ [post]
 func (app *application) createPostsHandler(w http.ResponseWriter, r *http.Request) {
-	var userId = 309
 	var ctx = r.Context()
 	var payload CreatePostPayload
 
@@ -53,12 +52,13 @@ func (app *application) createPostsHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	user := GetAuthUserFromContext(ctx)
+
 	var post = &store.Post{
 		Title:   payload.Title,
 		Content: payload.Content,
 		Tags:    payload.Tags,
-		// TODO: change after auth
-		UserID: int64(userId),
+		UserID:  user.ID,
 	}
 
 	if err := app.store.Posts.Create(ctx, post); err != nil {

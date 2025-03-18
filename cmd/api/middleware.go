@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/sergdort/Social/internal/store"
 	"net/http"
 	"strconv"
 	"strings"
@@ -75,4 +76,8 @@ func (app *application) AuthTokenMiddleware(next http.Handler) http.Handler {
 		ctx = context.WithValue(ctx, authUserCtx, user)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
+}
+
+func GetAuthUserFromContext(ctx context.Context) *store.User {
+	return ctx.Value(authUserCtx).(*store.User)
 }
