@@ -87,12 +87,10 @@ func (s *UserStore) RevertCreateAndInvite(ctx context.Context, id int64) error {
 }
 
 func (s *UserStore) GetByID(ctx context.Context, id int64) (*User, error) {
-	var query = `SELECT id, username, email, created_at FROM users WHERE id = $1`
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
 	defer cancel()
 
-	var user User
-	err := s.db.QueryRowContext(ctx, query, id).Scan(&user.ID, &user.Username, &user.Email, &user.CreatedAt)
+	row, err := s.queries.GetUserByID(ctx, id)
 	if err != nil {
 		switch {
 		case errors.Is(err, sql.ErrNoRows):
@@ -102,7 +100,13 @@ func (s *UserStore) GetByID(ctx context.Context, id int64) (*User, error) {
 		}
 	}
 
-	return &user, nil
+	return &User{
+		ID:        row.ID,
+		Username:  row.Username,
+		Email:     row.Email,
+		CreatedAt: row.CreatedAt.String(),
+		IsActive:  row.IsActive,
+	}, nil
 }
 
 func (s *UserStore) GetByEmail(ctx context.Context, email string) (*User, error) {
@@ -141,7 +145,7 @@ func (s *UserStore) CreateAndInvite(ctx context.Context, user *User, token strin
 
 func (s *UserStore) Activate(ctx context.Context, token string) error {
 	return withTransaction(s.db, ctx, func(tx *sql.Tx) error {
-		if err := activateUserByInvitationToken(ctx, token, tx); err != nil {
+		if err := s.activateUserByInvitationToken(ctx, token, tx); err != nil {
 			return err
 		}
 		if err := deleteUserInvitation(ctx, tx, token); err != nil {
@@ -151,19 +155,14 @@ func (s *UserStore) Activate(ctx context.Context, token string) error {
 	})
 }
 
-func activateUserByInvitationToken(ctx context.Context, token string, tx *sql.Tx) error {
-	query := `
-	UPDATE users u
-	SET is_active = TRUE
-	FROM user_invitations i
-	WHERE i.user_id = u.id
-	AND i.token = $1
-	AND i.expiry > $2
-	`
+func (s *UserStore) activateUserByInvitationToken(ctx context.Context, token string, tx *sql.Tx) error {
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
 	defer cancel()
 
-	_, err := tx.ExecContext(ctx, query, token, time.Now())
+	err := s.queries.WithTx(tx).ActiveUserByInvitationToken(ctx, sqlc.ActiveUserByInvitationTokenParams{
+		Token:  []byte(token),
+		Expiry: time.Now(),
+	})
 	if err != nil {
 		switch {
 		case errors.Is(err, sql.ErrNoRows):

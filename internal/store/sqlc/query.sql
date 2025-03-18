@@ -1,7 +1,20 @@
+-- name: GetUserByID :one
+SELECT id, username, email, created_at, is_active
+FROM users
+WHERE id = $1;
+
 -- name: GetUserByEmail :one
 SELECT id, email, password, username, created_at, is_active
 FROM users
 WHERE email = $1;
+
+-- name: ActiveUserByInvitationToken :exec
+UPDATE users u
+SET is_active = TRUE
+FROM user_invitations i
+WHERE i.user_id = u.id
+  AND i.token = $1
+  AND i.expiry > $2;
 
 -- name: GetPostByID :one
 SELECT id,

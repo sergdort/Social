@@ -13,6 +13,25 @@ import (
 	"github.com/lib/pq"
 )
 
+const activeUserByInvitationToken = `-- name: ActiveUserByInvitationToken :exec
+UPDATE users u
+SET is_active = TRUE
+FROM user_invitations i
+WHERE i.user_id = u.id
+  AND i.token = $1
+  AND i.expiry > $2
+`
+
+type ActiveUserByInvitationTokenParams struct {
+	Token  []byte
+	Expiry time.Time
+}
+
+func (q *Queries) ActiveUserByInvitationToken(ctx context.Context, arg ActiveUserByInvitationTokenParams) error {
+	_, err := q.db.ExecContext(ctx, activeUserByInvitationToken, arg.Token, arg.Expiry)
+	return err
+}
+
 const getPostByID = `-- name: GetPostByID :one
 SELECT id,
        content,
@@ -76,6 +95,33 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (GetUserByEm
 		&i.Email,
 		&i.Password,
 		&i.Username,
+		&i.CreatedAt,
+		&i.IsActive,
+	)
+	return i, err
+}
+
+const getUserByID = `-- name: GetUserByID :one
+SELECT id, username, email, created_at, is_active
+FROM users
+WHERE id = $1
+`
+
+type GetUserByIDRow struct {
+	ID        int64
+	Username  string
+	Email     string
+	CreatedAt time.Time
+	IsActive  bool
+}
+
+func (q *Queries) GetUserByID(ctx context.Context, id int64) (GetUserByIDRow, error) {
+	row := q.db.QueryRowContext(ctx, getUserByID, id)
+	var i GetUserByIDRow
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.Email,
 		&i.CreatedAt,
 		&i.IsActive,
 	)

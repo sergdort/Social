@@ -179,7 +179,7 @@ func (app *application) createTokenHandler(w http.ResponseWriter, r *http.Reques
 		"sub": user.ID,
 		"exp": time.Now().Add(app.config.auth.jwt.exp).Unix(),
 		"iat": time.Now().Unix(),
-		"nbf": time.Now().Add(app.config.auth.jwt.exp).Unix(),
+		"nbf": time.Now().Unix(),
 		"iss": app.config.auth.jwt.tokenHost,
 		"aud": app.config.auth.jwt.tokenHost,
 	}
