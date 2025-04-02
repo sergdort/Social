@@ -54,9 +54,16 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	role, err := app.store.Roles.GetByRoleType(r.Context(), store.RoleTypeUser)
+	if err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+
 	user := &store.User{
 		Username: payload.UserName,
 		Email:    payload.Email,
+		RoleID:   role.ID,
 	}
 
 	if err := user.Password.Set(payload.Password); err != nil {

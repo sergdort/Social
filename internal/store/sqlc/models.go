@@ -34,6 +34,13 @@ type Post struct {
 	Version   sql.NullInt32
 }
 
+type Role struct {
+	ID          int64
+	Name        string
+	Level       int32
+	Description sql.NullString
+}
+
 type User struct {
 	ID        int64
 	Email     string
@@ -41,6 +48,7 @@ type User struct {
 	Password  []byte
 	CreatedAt time.Time
 	IsActive  bool
+	RoleID    int32
 }
 
 type UserInvitation struct {

@@ -54,7 +54,7 @@ func (app *application) getUserHandler(w http.ResponseWriter, r *http.Request) {
 //	@Router			/users/{id}/follow [put]
 func (app *application) followUserHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	currentUser := GetAuthUserFromContext(ctx)
+	currentUser := getAuthUserFromContext(r)
 	userToFollow := getUserFromContext(r)
 
 	if err := app.store.Follows.Follow(ctx, currentUser.ID, userToFollow.ID); err != nil {
@@ -79,7 +79,7 @@ func (app *application) followUserHandler(w http.ResponseWriter, r *http.Request
 //	@Router			/users/{id}/unfollow [put]
 func (app *application) unfollowUserHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	currentUser := GetAuthUserFromContext(ctx)
+	currentUser := getAuthUserFromContext(r)
 	userToUnfollow := getUserFromContext(r)
 
 	if err := app.store.Follows.Unfollow(ctx, currentUser.ID, userToUnfollow.ID); err != nil {

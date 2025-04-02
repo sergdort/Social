@@ -52,7 +52,7 @@ func (app *application) createPostsHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	user := GetAuthUserFromContext(ctx)
+	user := getAuthUserFromContext(r)
 
 	var post = &store.Post{
 		Title:   payload.Title,

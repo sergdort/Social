@@ -1,7 +1,26 @@
+-- name: GetRoleByName :one
+SELECT id, name, description, level
+FROM roles
+WHERE name = $1;
+
+-- name: CreateUser :one
+INSERT INTO users (username, email, password, role_id)
+VALUES ($1, $2, $3, $4)
+RETURNING id, created_at;
+
 -- name: GetUserByID :one
-SELECT id, username, email, created_at, is_active
+SELECT users.id,
+       users.username,
+       users.email,
+       users.created_at,
+       users.is_active,
+       r.id          as role_id,
+       r.name        as role_name,
+       r.description as role_description,
+       r.level       as role_level
 FROM users
-WHERE id = $1;
+         JOIN roles r ON (users.role_id = r.id)
+WHERE users.id = $1;
 
 -- name: GetUserByEmail :one
 SELECT id, email, password, username, created_at, is_active

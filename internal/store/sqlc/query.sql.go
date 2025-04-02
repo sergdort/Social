@@ -32,6 +32,36 @@ func (q *Queries) ActiveUserByInvitationToken(ctx context.Context, arg ActiveUse
 	return err
 }
 
+const createUser = `-- name: CreateUser :one
+INSERT INTO users (username, email, password, role_id)
+VALUES ($1, $2, $3, $4)
+RETURNING id, created_at
+`
+
+type CreateUserParams struct {
+	Username string
+	Email    string
+	Password []byte
+	RoleID   int32
+}
+
+type CreateUserRow struct {
+	ID        int64
+	CreatedAt time.Time
+}
+
+func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (CreateUserRow, error) {
+	row := q.db.QueryRowContext(ctx, createUser,
+		arg.Username,
+		arg.Email,
+		arg.Password,
+		arg.RoleID,
+	)
+	var i CreateUserRow
+	err := row.Scan(&i.ID, &i.CreatedAt)
+	return i, err
+}
+
 const getPostByID = `-- name: GetPostByID :one
 SELECT id,
        content,
@@ -72,6 +102,31 @@ func (q *Queries) GetPostByID(ctx context.Context, id int64) (GetPostByIDRow, er
 	return i, err
 }
 
+const getRoleByName = `-- name: GetRoleByName :one
+SELECT id, name, description, level
+FROM roles
+WHERE name = $1
+`
+
+type GetRoleByNameRow struct {
+	ID          int64
+	Name        string
+	Description sql.NullString
+	Level       int32
+}
+
+func (q *Queries) GetRoleByName(ctx context.Context, name string) (GetRoleByNameRow, error) {
+	row := q.db.QueryRowContext(ctx, getRoleByName, name)
+	var i GetRoleByNameRow
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Description,
+		&i.Level,
+	)
+	return i, err
+}
+
 const getUserByEmail = `-- name: GetUserByEmail :one
 SELECT id, email, password, username, created_at, is_active
 FROM users
@@ -102,17 +157,30 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (GetUserByEm
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT id, username, email, created_at, is_active
+SELECT users.id,
+       users.username,
+       users.email,
+       users.created_at,
+       users.is_active,
+       r.id          as role_id,
+       r.name        as role_name,
+       r.description as role_description,
+       r.level       as role_level
 FROM users
-WHERE id = $1
+         JOIN roles r ON (users.role_id = r.id)
+WHERE users.id = $1
 `
 
 type GetUserByIDRow struct {
-	ID        int64
-	Username  string
-	Email     string
-	CreatedAt time.Time
-	IsActive  bool
+	ID              int64
+	Username        string
+	Email           string
+	CreatedAt       time.Time
+	IsActive        bool
+	RoleID          int64
+	RoleName        string
+	RoleDescription sql.NullString
+	RoleLevel       int32
 }
 
 func (q *Queries) GetUserByID(ctx context.Context, id int64) (GetUserByIDRow, error) {
@@ -124,6 +192,10 @@ func (q *Queries) GetUserByID(ctx context.Context, id int64) (GetUserByIDRow, er
 		&i.Email,
 		&i.CreatedAt,
 		&i.IsActive,
+		&i.RoleID,
+		&i.RoleName,
+		&i.RoleDescription,
+		&i.RoleLevel,
 	)
 	return i, err
 }

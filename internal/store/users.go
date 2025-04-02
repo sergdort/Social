@@ -16,6 +16,8 @@ type User struct {
 	Password  password `json:"-"`
 	CreatedAt string   `json:"created_at"`
 	IsActive  bool     `json:"is_active"`
+	RoleID    int64    `json:"role_id"`
+	Role      Role     `json:"role"`
 }
 
 type password struct {
@@ -45,21 +47,21 @@ type UserStore struct {
 }
 
 func (s *UserStore) Create(ctx context.Context, tx *sql.Tx, user *User) error {
-	var query = `INSERT INTO users (username, email, password) VALUES ($1, $2, $3) RETURNING id, created_at`
-
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
 
 	defer cancel()
-	err := tx.QueryRowContext(
+	result, err := s.queries.WithTx(tx).CreateUser(
 		ctx,
-		query,
-		user.Username,
-		user.Email,
-		user.Password.hash,
-	).Scan(
-		&user.ID,
-		&user.CreatedAt,
+		sqlc.CreateUserParams{
+			Username: user.Username,
+			Email:    user.Email,
+			Password: user.Password.hash,
+			RoleID:   int32(user.RoleID),
+		},
 	)
+
+	user.ID = result.ID
+	user.CreatedAt = result.CreatedAt.String()
 
 	if err != nil {
 		switch {
@@ -106,6 +108,13 @@ func (s *UserStore) GetByID(ctx context.Context, id int64) (*User, error) {
 		Email:     row.Email,
 		CreatedAt: row.CreatedAt.String(),
 		IsActive:  row.IsActive,
+		RoleID:    row.RoleID,
+		Role: Role{
+			ID:          row.RoleID,
+			Name:        row.RoleName,
+			Description: row.RoleDescription.String,
+			Level:       int64(row.RoleLevel),
+		},
 	}, nil
 }
 

@@ -7,7 +7,7 @@ import (
 	"github.com/sergdort/Social/docs" // This is required to generate Swagger docs
 	"github.com/sergdort/Social/internal/auth"
 	"github.com/sergdort/Social/internal/mailer"
-	store2 "github.com/sergdort/Social/internal/store"
+	s "github.com/sergdort/Social/internal/store"
 	httpSwagger "github.com/swaggo/http-swagger"
 	"go.uber.org/zap"
 	"net/http"
@@ -23,7 +23,7 @@ type dbConfig struct {
 
 type application struct {
 	config        config
-	store         store2.Storage
+	store         s.Storage
 	logger        *zap.SugaredLogger
 	mailer        mailer.Mailer
 	authenticator auth.Authenticator
@@ -104,8 +104,8 @@ func (app *application) mount() http.Handler {
 			r.Route("/{postID}", func(r chi.Router) {
 				r.Use(app.postsContextMiddleware)
 				r.Get("/", app.getPostHandler)
-				r.Delete("/", app.deletePostHandler)
-				r.Patch("/", app.patchPostsHandler)
+				r.Delete("/", app.checkPostOwnershipMiddleware(s.RoleTypeAdmin, app.deletePostHandler))
+				r.Patch("/", app.checkPostOwnershipMiddleware(s.RoleTypeModerator, app.patchPostsHandler))
 			})
 		})
 

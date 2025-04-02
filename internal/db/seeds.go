@@ -7,6 +7,7 @@ import (
 	"github.com/sergdort/Social/internal/store"
 	"log"
 	"math/rand"
+	"time"
 )
 
 func Seed(store store.Storage, db *sql.DB) {
@@ -70,7 +71,7 @@ func generatePosts(users []*store.User) []*store.Post {
 			UserID:  users[rand.Intn(len(users))].ID,
 			Title:   seed.Title,
 			Content: seed.Content,
-			Tags:    getRandomTags(4),
+			Tags:    getRandomTags(),
 		}
 	}
 
@@ -86,6 +87,7 @@ func generateUsers() []*store.User {
 			Username:  username,
 			Email:     fmt.Sprintf("%s@example.com", username),
 			CreatedAt: "",
+			RoleID:    1,
 		}
 		_ = user.Password.Set("123123")
 		users[i] = user
@@ -273,10 +275,14 @@ var comments = []string{
 	"Once, I believed in stories. Now, I know better. – Shireen Baratheon",
 }
 
-func getRandomTags(count int) []string {
-	rand.Shuffle(len(tags), func(i, j int) { tags[i], tags[j] = tags[j], tags[i] })
+func getRandomTags() []string {
+	rand.Seed(time.Now().UnixNano()) // Ensure randomness per run
 
-	return tags[:count]
+	shuffled := make([]string, len(tags))
+	copy(shuffled, tags)
+	rand.Shuffle(len(shuffled), func(i, j int) { shuffled[i], shuffled[j] = shuffled[j], shuffled[i] })
+
+	return shuffled[:4] // Select first 4 shuffled elements
 }
 
 func getRandomComments(count int) []string {
