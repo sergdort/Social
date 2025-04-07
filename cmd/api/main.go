@@ -1,11 +1,13 @@
 package main
 
 import (
+	"github.com/redis/go-redis/v9"
 	"github.com/sergdort/Social/internal/auth"
 	"github.com/sergdort/Social/internal/db"
 	"github.com/sergdort/Social/internal/env"
 	"github.com/sergdort/Social/internal/mailer"
 	"github.com/sergdort/Social/internal/store"
+	"github.com/sergdort/Social/internal/store/cache"
 	"go.uber.org/zap"
 	"time"
 )
@@ -36,6 +38,12 @@ func main() {
 			maxOpenConns: env.GetInt("DB_MAX_OPEN_CONNS", 30),
 			maxIdleConns: env.GetInt("DB_MAX_IDLE_CONNS", 30),
 			maxIdleTime:  env.GetString("DB_MAX_IDLE_TIME", "15m"),
+		},
+		redisCfg: redisConfig{
+			addr:    env.GetString("REDIS_ADDR", "localhost:6379"),
+			pw:      env.GetString("REDIS_PW", ""),
+			db:      env.GetInt("REDIS_DB", 0),
+			enabled: env.GetBool("REDIS_ENABLED", true),
 		},
 		env:    env.GetString("ENV", "development"),
 		apiURL: env.GetString("EXTERNAL_URL", "http://localhost:8080"),
@@ -87,8 +95,14 @@ func main() {
 		"maxIdleConns", cfg.db.maxIdleConns,
 		"maxIdleTime", cfg.db.maxIdleTime,
 	)
+	var rdb *redis.Client
+	if cfg.redisCfg.enabled {
+		rdb = cache.NewRedisClient(cfg.redisCfg.addr, cfg.redisCfg.pw, cfg.redisCfg.db)
+		logger.Infow("Redis connected")
+	}
+	cacheStorage := cache.NewStorage(rdb)
 
-	var s = store.NewStorage(database)
+	s := store.NewStorage(database)
 
 	var authenticator = auth.NewJWTAutheticator(
 		cfg.auth.jwt.secret,
@@ -102,6 +116,7 @@ func main() {
 		logger:        logger,
 		mailer:        mail,
 		authenticator: authenticator,
+		cache:         cacheStorage,
 	}
 
 	logger.Fatal(app.run(app.mount()))

@@ -21,3 +21,13 @@ func GetInt(key string, fallback int) int {
 	}
 	return fallback
 }
+
+func GetBool(key string, fallback bool) bool {
+	if value, ok := os.LookupEnv(key); ok {
+		if valueBool, err := strconv.ParseBool(value); err == nil {
+			return valueBool
+		}
+		return fallback
+	}
+	return fallback
+}

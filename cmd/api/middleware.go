@@ -68,7 +68,7 @@ func (app *application) AuthTokenMiddleware(next http.Handler) http.Handler {
 			return
 		}
 		ctx := r.Context()
-		user, err := app.store.Users.GetByID(ctx, userID)
+		user, err := app.getUser(ctx, userID)
 		if err != nil {
 			app.unauthorizedErrorResponse(w, r, err)
 			return
@@ -112,4 +112,24 @@ func (app *application) checkRolePrecedenceForPost(user *store.User, ctx context
 		return false, err
 	}
 	return user.Role.Level >= role.Level, nil
+}
+
+func (app *application) getUser(ctx context.Context, userID int64) (*store.User, error) {
+	// Try to get user from cache
+	if user, err := app.cache.Users.Get(ctx, userID); err == nil && user != nil {
+		return user, nil
+	}
+
+	// Fetch from database
+	user, err := app.store.Users.GetByID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Try to store in cache but don't fail if caching fails
+	if err := app.cache.Users.Set(ctx, user); err != nil {
+		app.logger.Warn("Failed to set user in cache", "userID", userID, "error", err)
+	}
+
+	return user, nil
 }
