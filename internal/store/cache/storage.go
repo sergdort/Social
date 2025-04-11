@@ -7,10 +7,12 @@ import (
 )
 
 type Storage struct {
-	Users interface {
-		Get(ctx context.Context, id int64) (*store.User, error)
-		Set(ctx context.Context, user *store.User) error
-	}
+	Users UsersCache
+}
+
+type UsersCache interface {
+	Get(ctx context.Context, id int64) (*store.User, error)
+	Set(ctx context.Context, user *store.User) error
 }
 
 func NewStorage(rdb *redis.Client) Storage {

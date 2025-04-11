@@ -62,7 +62,7 @@ func (app *application) AuthTokenMiddleware(next http.Handler) http.Handler {
 			return
 		}
 		claims := jwtToken.Claims.(jwt.MapClaims)
-		userID, err := strconv.ParseInt(fmt.Sprintf("%.f", claims["sub"]), 10, 64)
+		userID, err := strconv.ParseInt(fmt.Sprintf("%d", claims["sub"]), 10, 64)
 		if err != nil {
 			app.unauthorizedErrorResponse(w, r, err)
 			return
