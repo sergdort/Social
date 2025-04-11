@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"github.com/lib/pq"
 	"github.com/sergdort/Social/internal/store/sqlc"
 )
 
@@ -27,16 +26,26 @@ type PostWithMetadata struct {
 }
 
 type PostStore struct {
-	db      *sql.DB
 	queries *sqlc.Queries
 }
 
 func (s *PostStore) Create(ctx context.Context, post *Post) error {
-	var query = `INSERT INTO posts (content, title, user_id, tags) VALUES ($1, $2, $3, $4) RETURNING id, created_at, updated_at`
+	row, err := s.queries.CreatePost(ctx, sqlc.CreatePostParams{
+		Content: post.Content,
+		Title:   post.Title,
+		UserID:  post.UserID,
+		Tags:    post.Tags,
+	})
 
-	return s.db.QueryRowContext(
-		ctx, query, post.Content, post.Title, post.UserID, pq.Array(post.Tags),
-	).Scan(&post.ID, &post.CreatedAt, &post.UpdatedAt)
+	if err != nil {
+		return err
+	}
+
+	post.ID = row.ID
+	post.CreatedAt = row.CreatedAt.String()
+	post.UpdatedAt = row.UpdatedAt.String()
+
+	return nil
 }
 
 func (s *PostStore) GetByID(ctx context.Context, id int64) (*Post, error) {
@@ -66,18 +75,15 @@ func (s *PostStore) GetByID(ctx context.Context, id int64) (*Post, error) {
 }
 
 func (s *PostStore) Delete(ctx context.Context, id int64) error {
-	var query = `DELETE FROM posts WHERE id = $1`
-
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
 
 	defer cancel()
 
-	res, err := s.db.ExecContext(ctx, query, id)
+	rows, err := s.queries.DeletePostByID(ctx, id)
 
 	if err != nil {
 		return err
 	}
-	rows, err := res.RowsAffected()
 	if err != nil {
 		return err
 	}
@@ -88,24 +94,19 @@ func (s *PostStore) Delete(ctx context.Context, id int64) error {
 }
 
 func (s *PostStore) Update(ctx context.Context, post *Post) error {
-	query := `
-		UPDATE posts 
-		SET content = $1, title = $2, version = version + 1
-		WHERE id = $3 AND version = $4 
-		RETURNING version
-	`
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
 
 	defer cancel()
 
-	err := s.db.QueryRowContext(
-		ctx,
-		query,
-		post.Content,
-		post.Title,
-		post.ID,
-		post.Version,
-	).Scan(&post.Version)
+	version, err := s.queries.UpdatePost(ctx, sqlc.UpdatePostParams{
+		Content: post.Content,
+		Title:   post.Title,
+		ID:      post.ID,
+		Version: sql.NullInt32{
+			Int32: int32(post.Version),
+			Valid: true,
+		},
+	})
 
 	if err != nil {
 		switch {
@@ -115,6 +116,8 @@ func (s *PostStore) Update(ctx context.Context, post *Post) error {
 			return err
 		}
 	}
+
+	post.Version = int64(version.Int32)
 
 	return nil
 }

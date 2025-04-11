@@ -32,6 +32,76 @@ func (q *Queries) ActiveUserByInvitationToken(ctx context.Context, arg ActiveUse
 	return err
 }
 
+const createComment = `-- name: CreateComment :one
+INSERT INTO comments (post_id, user_id, content)
+VALUES ($1, $2, $3)
+RETURNING id, created_at
+`
+
+type CreateCommentParams struct {
+	PostID  int64
+	UserID  int64
+	Content sql.NullString
+}
+
+type CreateCommentRow struct {
+	ID        int64
+	CreatedAt time.Time
+}
+
+func (q *Queries) CreateComment(ctx context.Context, arg CreateCommentParams) (CreateCommentRow, error) {
+	row := q.db.QueryRowContext(ctx, createComment, arg.PostID, arg.UserID, arg.Content)
+	var i CreateCommentRow
+	err := row.Scan(&i.ID, &i.CreatedAt)
+	return i, err
+}
+
+const createFollow = `-- name: CreateFollow :exec
+INSERT INTO followers (user_id, follower_id)
+VALUES ($1, $2)
+`
+
+type CreateFollowParams struct {
+	UserID     int64
+	FollowerID int64
+}
+
+func (q *Queries) CreateFollow(ctx context.Context, arg CreateFollowParams) error {
+	_, err := q.db.ExecContext(ctx, createFollow, arg.UserID, arg.FollowerID)
+	return err
+}
+
+const createPost = `-- name: CreatePost :one
+INSERT INTO posts (content, title, user_id, tags)
+VALUES ($1, $2, $3, $4)
+RETURNING id, created_at, updated_at
+`
+
+type CreatePostParams struct {
+	Content string
+	Title   string
+	UserID  int64
+	Tags    []string
+}
+
+type CreatePostRow struct {
+	ID        int64
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
+func (q *Queries) CreatePost(ctx context.Context, arg CreatePostParams) (CreatePostRow, error) {
+	row := q.db.QueryRowContext(ctx, createPost,
+		arg.Content,
+		arg.Title,
+		arg.UserID,
+		pq.Array(arg.Tags),
+	)
+	var i CreatePostRow
+	err := row.Scan(&i.ID, &i.CreatedAt, &i.UpdatedAt)
+	return i, err
+}
+
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (username, email, password, role_id)
 VALUES ($1, $2, $3, $4)
@@ -60,6 +130,144 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (CreateU
 	var i CreateUserRow
 	err := row.Scan(&i.ID, &i.CreatedAt)
 	return i, err
+}
+
+const createUserInvitation = `-- name: CreateUserInvitation :exec
+INSERT INTO user_invitations (token, user_id, expiry)
+VALUES ($1, $2, $3)
+`
+
+type CreateUserInvitationParams struct {
+	Token  []byte
+	UserID int64
+	Expiry time.Time
+}
+
+func (q *Queries) CreateUserInvitation(ctx context.Context, arg CreateUserInvitationParams) error {
+	_, err := q.db.ExecContext(ctx, createUserInvitation, arg.Token, arg.UserID, arg.Expiry)
+	return err
+}
+
+const deleteFollow = `-- name: DeleteFollow :execrows
+DELETE
+FROM followers
+WHERE user_id = $1
+  AND follower_id = $2
+`
+
+type DeleteFollowParams struct {
+	UserID     int64
+	FollowerID int64
+}
+
+func (q *Queries) DeleteFollow(ctx context.Context, arg DeleteFollowParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, deleteFollow, arg.UserID, arg.FollowerID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
+const deletePostByID = `-- name: DeletePostByID :execrows
+DELETE
+FROM posts
+WHERE id = $1
+`
+
+func (q *Queries) DeletePostByID(ctx context.Context, id int64) (int64, error) {
+	result, err := q.db.ExecContext(ctx, deletePostByID, id)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
+const deleteUserByID = `-- name: DeleteUserByID :exec
+DELETE
+FROM users
+WHERE id = $1
+`
+
+func (q *Queries) DeleteUserByID(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, deleteUserByID, id)
+	return err
+}
+
+const deleteUserInvitationByToken = `-- name: DeleteUserInvitationByToken :exec
+DELETE
+FROM user_invitations
+WHERE token = $1
+`
+
+func (q *Queries) DeleteUserInvitationByToken(ctx context.Context, token []byte) error {
+	_, err := q.db.ExecContext(ctx, deleteUserInvitationByToken, token)
+	return err
+}
+
+const deleteUserInvitationByUserID = `-- name: DeleteUserInvitationByUserID :exec
+DELETE
+FROM user_invitations
+WHERE user_id = $1
+`
+
+func (q *Queries) DeleteUserInvitationByUserID(ctx context.Context, userID int64) error {
+	_, err := q.db.ExecContext(ctx, deleteUserInvitationByUserID, userID)
+	return err
+}
+
+const getAllCommentsByPostID = `-- name: GetAllCommentsByPostID :many
+SELECT c.id,
+       c.post_id,
+       c.user_id,
+       c.content,
+       c.created_at,
+       u.username,
+       u.id
+FROM comments c
+         JOIN users u ON u.id = c.user_id
+WHERE c.post_id = $1
+ORDER BY c.created_at DESC
+`
+
+type GetAllCommentsByPostIDRow struct {
+	ID        int64
+	PostID    int64
+	UserID    int64
+	Content   sql.NullString
+	CreatedAt time.Time
+	Username  string
+	ID_2      int64
+}
+
+func (q *Queries) GetAllCommentsByPostID(ctx context.Context, postID int64) ([]GetAllCommentsByPostIDRow, error) {
+	rows, err := q.db.QueryContext(ctx, getAllCommentsByPostID, postID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetAllCommentsByPostIDRow
+	for rows.Next() {
+		var i GetAllCommentsByPostIDRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.PostID,
+			&i.UserID,
+			&i.Content,
+			&i.CreatedAt,
+			&i.Username,
+			&i.ID_2,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const getPostByID = `-- name: GetPostByID :one
@@ -277,4 +485,33 @@ func (q *Queries) GetUserFeed(ctx context.Context, arg GetUserFeedParams) ([]Get
 		return nil, err
 	}
 	return items, nil
+}
+
+const updatePost = `-- name: UpdatePost :one
+UPDATE posts
+SET content = $1,
+    title   = $2,
+    version = version + 1
+WHERE id = $3
+  AND version = $4
+RETURNING version
+`
+
+type UpdatePostParams struct {
+	Content string
+	Title   string
+	ID      int64
+	Version sql.NullInt32
+}
+
+func (q *Queries) UpdatePost(ctx context.Context, arg UpdatePostParams) (sql.NullInt32, error) {
+	row := q.db.QueryRowContext(ctx, updatePost,
+		arg.Content,
+		arg.Title,
+		arg.ID,
+		arg.Version,
+	)
+	var version sql.NullInt32
+	err := row.Scan(&version)
+	return version, err
 }

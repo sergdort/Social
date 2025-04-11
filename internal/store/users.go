@@ -78,10 +78,10 @@ func (s *UserStore) Create(ctx context.Context, tx *sql.Tx, user *User) error {
 
 func (s *UserStore) RevertCreateAndInvite(ctx context.Context, id int64) error {
 	return withTransaction(s.db, ctx, func(tx *sql.Tx) error {
-		if err := deleteUser(ctx, id, tx); err != nil {
+		if err := s.deleteUser(ctx, id, tx); err != nil {
 			return err
 		}
-		if err := deleteInvitation(ctx, id, tx); err != nil {
+		if err := s.deleteInvitation(ctx, id, tx); err != nil {
 			return err
 		}
 		return nil
@@ -145,7 +145,7 @@ func (s *UserStore) CreateAndInvite(ctx context.Context, user *User, token strin
 			return err
 		}
 
-		if err := createUserInvitation(ctx, tx, token, user.ID, expiration); err != nil {
+		if err := s.createUserInvitation(ctx, tx, token, user.ID, expiration); err != nil {
 			return err
 		}
 		return nil
@@ -157,7 +157,7 @@ func (s *UserStore) Activate(ctx context.Context, token string) error {
 		if err := s.activateUserByInvitationToken(ctx, token, tx); err != nil {
 			return err
 		}
-		if err := deleteUserInvitation(ctx, tx, token); err != nil {
+		if err := s.deleteUserInvitation(ctx, tx, token); err != nil {
 			return err
 		}
 		return nil
@@ -184,46 +184,46 @@ func (s *UserStore) activateUserByInvitationToken(ctx context.Context, token str
 	return nil
 }
 
-func createUserInvitation(
+func (s *UserStore) createUserInvitation(
 	ctx context.Context,
 	tx *sql.Tx,
 	token string,
 	userID int64,
 	expiration time.Duration,
 ) error {
-	query := `INSERT INTO user_invitations (token, user_id, expiry) VALUES ($1, $2, $3)`
-
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
 	defer cancel()
 
-	if _, err := tx.ExecContext(ctx, query, token, userID, time.Now().Add(expiration)); err != nil {
+	err := s.queries.WithTx(tx).CreateUserInvitation(ctx, sqlc.CreateUserInvitationParams{
+		Token:  []byte(token),
+		UserID: userID,
+		Expiry: time.Now().Add(expiration),
+	})
+
+	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
-func deleteUserInvitation(ctx context.Context, tx *sql.Tx, token string) error {
-	query := `DELETE FROM user_invitations WHERE token = $1`
+func (s *UserStore) deleteUserInvitation(ctx context.Context, tx *sql.Tx, token string) error {
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
 	defer cancel()
-	if _, err := tx.ExecContext(ctx, query, token); err != nil {
-		return err
-	}
-	return nil
-}
-
-func deleteUser(ctx context.Context, id int64, tx *sql.Tx) error {
-	var query = `DELETE FROM users WHERE id = $1`
-	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
-	defer cancel()
-	_, err := tx.ExecContext(ctx, query, id)
+	err := s.queries.WithTx(tx).DeleteUserInvitationByToken(ctx, []byte(token))
 	return err
 }
 
-func deleteInvitation(ctx context.Context, userID int64, tx *sql.Tx) error {
-	var query = `DELETE FROM user_invitations WHERE user_id = $1`
+func (s *UserStore) deleteUser(ctx context.Context, id int64, tx *sql.Tx) error {
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
 	defer cancel()
-	_, err := tx.ExecContext(ctx, query, userID)
+	err := s.queries.WithTx(tx).DeleteUserByID(ctx, id)
+	return err
+}
+
+func (s *UserStore) deleteInvitation(ctx context.Context, userID int64, tx *sql.Tx) error {
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+	defer cancel()
+	err := s.queries.WithTx(tx).DeleteUserInvitationByUserID(ctx, userID)
 	return err
 }

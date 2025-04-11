@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"database/sql"
+	"github.com/sergdort/Social/internal/store/sqlc"
 )
 
 type Comment struct {
@@ -16,68 +17,59 @@ type Comment struct {
 }
 
 type CommentStore struct {
-	db *sql.DB
+	queries *sqlc.Queries
 }
 
 func (s *CommentStore) Create(ctx context.Context, comment *Comment) error {
-	var query = `INSERT INTO comments (post_id, user_id, content) VALUES ($1, $2, $3) RETURNING id, created_at`
 
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
 
 	defer cancel()
 
-	return s.db.QueryRowContext(
-		ctx,
-		query,
-		comment.PostID,
-		comment.UserID,
-		comment.Content,
-	).Scan(&comment.ID, &comment.CreatedAt)
+	result, err := s.queries.CreateComment(ctx, sqlc.CreateCommentParams{
+		PostID: comment.PostID,
+		UserID: comment.UserID,
+		Content: sql.NullString{
+			String: comment.Content,
+			Valid:  true,
+		},
+	})
+
+	if err != nil {
+		return err
+	}
+
+	comment.ID = result.ID
+	comment.CreatedAt = result.CreatedAt.String()
+
+	return nil
 }
 
 func (s *CommentStore) GetAllByPostID(ctx context.Context, postID int64) ([]Comment, error) {
-	var query = `
-	SELECT
-	c.id, c.post_id, c.user_id, c.content, c.created_at, users.username, users.id
-	FROM
-	comments c
-	JOIN users ON users.id = c.user_id
-	WHERE c.post_id = $1
-	ORDER BY c.created_at DESC
-	`
-
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
 
 	defer cancel()
 
-	rows, err := s.db.QueryContext(ctx, query, postID)
+	rows, err := s.queries.GetAllCommentsByPostID(ctx, postID)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
-	var comments []Comment
+	comments := Map(rows, convertToComment)
 
-	for rows.Next() {
-		var comment Comment
-		comment.User = User{}
-
-		err := rows.Scan(
-			&comment.ID,
-			&comment.PostID,
-			&comment.UserID,
-			&comment.Content,
-			&comment.CreatedAt,
-			&comment.User.Username,
-			&comment.User.ID,
-		)
-		if err != nil {
-			return nil, err
-		}
-		comments = append(comments, comment)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
 	return comments, nil
+}
+
+func convertToComment(row sqlc.GetAllCommentsByPostIDRow) Comment {
+	return Comment{
+		ID:        row.ID,
+		PostID:    row.PostID,
+		UserID:    row.UserID,
+		Content:   row.Content.String,
+		CreatedAt: row.CreatedAt.String(),
+		User: User{
+			ID:       row.UserID,
+			Username: row.Username,
+		},
+	}
 }

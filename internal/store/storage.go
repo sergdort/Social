@@ -55,10 +55,10 @@ type RolesRepository interface {
 
 func NewStorage(db *sql.DB) Storage {
 	return Storage{
-		Posts:    &PostStore{db, sqlc.New(db)},
+		Posts:    &PostStore{sqlc.New(db)},
 		Users:    &UserStore{db, sqlc.New(db)},
-		Comments: &CommentStore{db},
-		Follows:  &FollowsStore{db},
+		Comments: &CommentStore{sqlc.New(db)},
+		Follows:  &FollowsStore{sqlc.New(db)},
 		Roles:    &RolesStore{queries: sqlc.New(db)},
 	}
 }

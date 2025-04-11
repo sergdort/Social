@@ -2,23 +2,21 @@ package store
 
 import (
 	"context"
-	"database/sql"
+	"github.com/sergdort/Social/internal/store/sqlc"
 )
 
 type FollowsStore struct {
-	db *sql.DB
+	queries *sqlc.Queries
 }
 
 func (s *FollowsStore) Follow(ctx context.Context, userId int64, followerId int64) error {
 	ctx, cancel := context.WithTimeout(context.Background(), QueryTimeoutDuration)
 	defer cancel()
 
-	_, err := s.db.ExecContext(
-		ctx,
-		`INSERT INTO followers (user_id, follower_id) VALUES ($1, $2)`,
-		userId,
-		followerId,
-	)
+	err := s.queries.CreateFollow(ctx, sqlc.CreateFollowParams{
+		UserID:     userId,
+		FollowerID: followerId,
+	})
 
 	return err
 }
@@ -27,17 +25,15 @@ func (s *FollowsStore) Unfollow(ctx context.Context, userID int64, followerID in
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration) // Use passed ctx
 	defer cancel()
 
-	res, err := s.db.ExecContext(
-		ctx,
-		`DELETE FROM followers WHERE user_id = $1 AND follower_id = $2`,
-		userID,
-		followerID,
-	)
+	rows, err := s.queries.DeleteFollow(ctx, sqlc.DeleteFollowParams{
+		UserID:     userID,
+		FollowerID: followerID,
+	})
 	if err != nil {
 		return err
 	}
 
-	if rows, _ := res.RowsAffected(); rows == 0 {
+	if rows == 0 {
 		return ErrNotFound
 	}
 
