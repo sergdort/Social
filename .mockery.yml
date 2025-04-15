@@ -18,3 +18,6 @@ packages:
       CommentsRepository:
       FollowsRepository:
       RolesRepository:
+  github.com/sergdort/Social/internal/store/sqlc:
+    interfaces:
+      DBTX:
