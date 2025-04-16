@@ -1,7 +1,11 @@
 package main
 
 import (
+	"context"
+	"expvar"
+	"fmt"
 	"github.com/redis/go-redis/v9"
+	"github.com/sergdort/Social/cmd/api/debug"
 	"github.com/sergdort/Social/internal/auth"
 	"github.com/sergdort/Social/internal/db"
 	"github.com/sergdort/Social/internal/env"
@@ -9,6 +13,10 @@ import (
 	"github.com/sergdort/Social/internal/store"
 	"github.com/sergdort/Social/internal/store/cache"
 	"go.uber.org/zap"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 )
 
@@ -32,7 +40,9 @@ const version = "0.0.0.1"
 
 func main() {
 	var cfg = config{
-		address: env.GetString("ADDR", ":8080"),
+		address:         env.GetString("ADDR", ":8080"),
+		debugHost:       env.GetString("DEBUG_HOST", ":8090"),
+		shutDownTimeout: time.Duration(env.GetInt("SHUTDOWN_TIMEOUT", 20)),
 		db: dbConfig{
 			addr:         env.GetString("DB_ADDR", "postgres://admin:adminpassword@localhost/social?sslmode=disable"),
 			maxOpenConns: env.GetInt("DB_MAX_OPEN_CONNS", 30),
@@ -118,6 +128,48 @@ func main() {
 		authenticator: authenticator,
 		cache:         cacheStorage,
 	}
+	ctx := context.Background()
+	// TODO: Pass build type
+	expvar.NewString("build").Set("develop")
 
-	logger.Fatal(app.run(app.mount()))
+	go func() {
+		logger.Infow(
+			"debug v1 router started",
+			"host", cfg.debugHost,
+		)
+		if err := http.ListenAndServe(cfg.debugHost, debug.Mux()); err != nil {
+			logger.Errorw("debug v1 router stopped", "host", cfg.debugHost, "err", err)
+		}
+	}()
+
+	serverErrors := make(chan error, 1)
+	server := app.makeServer(app.mount())
+
+	shutdown := make(chan os.Signal, 1)
+	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		logger.Infow("api router started", "host", cfg.apiURL)
+
+		serverErrors <- server.ListenAndServe()
+	}()
+
+	// -------------------------------------------------------------------------
+	// Shutdown
+
+	select {
+	case err := <-serverErrors:
+		logger.Infow("api router stopped", "host", cfg.apiURL, "err", err)
+	case sig := <-shutdown:
+		logger.Infow("shutdown started", "status", sig)
+		defer logger.Infow("shutdown complete", "signal", sig)
+
+		ctx, cancel := context.WithTimeout(ctx, cfg.shutDownTimeout)
+		defer cancel()
+
+		if err := server.Shutdown(ctx); err != nil {
+			server.Close()
+			fmt.Errorf("could not stop server gracefully: %w", err)
+		}
+	}
 }

@@ -38,14 +38,16 @@ type redisConfig struct {
 }
 
 type config struct {
-	address     string
-	db          dbConfig
-	env         string
-	apiURL      string
-	mail        mailConfig
-	frontEndURL string
-	auth        authConfig
-	redisCfg    redisConfig
+	address         string
+	debugHost       string
+	shutDownTimeout time.Duration
+	db              dbConfig
+	env             string
+	apiURL          string
+	mail            mailConfig
+	frontEndURL     string
+	auth            authConfig
+	redisCfg        redisConfig
 }
 
 type mailConfig struct {
@@ -143,7 +145,7 @@ func (app *application) mount() http.Handler {
 	return router
 }
 
-func (app *application) run(mux http.Handler) error {
+func (app *application) makeServer(mux http.Handler) *http.Server {
 	// Docs
 	docs.SwaggerInfo.Version = version
 	docs.SwaggerInfo.BasePath = "/v1"
@@ -162,5 +164,5 @@ func (app *application) run(mux http.Handler) error {
 		"env", app.config.env,
 	)
 
-	return server.ListenAndServe()
+	return server
 }
