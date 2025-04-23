@@ -93,8 +93,6 @@ func (app *application) mount() http.Handler {
 	router.Use(middleware.Recoverer)
 	router.Use(middleware.RealIP)
 	router.Use(middleware.RequestID)
-	router.Use(middleware.Logger)
-	router.Use(middleware.Recoverer)
 
 	// Set a timeout value on the request context (ctx), that will signal
 	// through ctx.Done() that the request has timed out and further
