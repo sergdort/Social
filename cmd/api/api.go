@@ -4,6 +4,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
+	"github.com/sergdort/Social/business/domain"
 	"github.com/sergdort/Social/docs" // This is required to generate Swagger docs
 	"github.com/sergdort/Social/internal/auth"
 	"github.com/sergdort/Social/internal/mailer"
@@ -29,7 +30,13 @@ type application struct {
 	mailer        mailer.Mailer
 	authenticator auth.Authenticator
 	cache         cache.Storage
+	useCase       useCases
 }
+
+type useCases struct {
+	Users *domain.UsersUseCase
+}
+
 type redisConfig struct {
 	addr    string
 	pw      string
@@ -114,8 +121,8 @@ func (app *application) mount() http.Handler {
 			r.Route("/{postID}", func(r chi.Router) {
 				r.Use(app.postsContextMiddleware)
 				r.Get("/", app.getPostHandler)
-				r.Delete("/", app.checkPostOwnershipMiddleware(s.RoleTypeAdmin, app.deletePostHandler))
-				r.Patch("/", app.checkPostOwnershipMiddleware(s.RoleTypeModerator, app.patchPostsHandler))
+				r.Delete("/", app.checkPostOwnershipMiddleware(domain.RoleTypeAdmin, app.deletePostHandler))
+				r.Patch("/", app.checkPostOwnershipMiddleware(domain.RoleTypeModerator, app.patchPostsHandler))
 			})
 		})
 

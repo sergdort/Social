@@ -4,49 +4,17 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"github.com/sergdort/Social/business/domain"
 	"github.com/sergdort/Social/internal/store/sqlc"
-	"golang.org/x/crypto/bcrypt"
 	"time"
 )
-
-type User struct {
-	ID        int64    `json:"id"`
-	Username  string   `db:"username"`
-	Email     string   `json:"email"`
-	Password  password `json:"-"`
-	CreatedAt string   `json:"created_at"`
-	IsActive  bool     `json:"is_active"`
-	RoleID    int64    `json:"role_id"`
-	Role      Role     `json:"role"`
-}
-
-type password struct {
-	text *string
-	hash []byte
-}
-
-func (p *password) Set(text string) error {
-	hash, err := bcrypt.GenerateFromPassword([]byte(text), bcrypt.DefaultCost)
-	if err != nil {
-		return err
-	}
-
-	p.hash = hash
-	p.text = &text
-
-	return nil
-}
-
-func (p *password) Verify(text string) error {
-	return bcrypt.CompareHashAndPassword(p.hash, []byte(text))
-}
 
 type UserStore struct {
 	db      *sql.DB
 	queries *sqlc.Queries
 }
 
-func (s *UserStore) Create(ctx context.Context, tx *sql.Tx, user *User) error {
+func (s *UserStore) Create(ctx context.Context, tx *sql.Tx, user *domain.User) error {
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
 
 	defer cancel()
@@ -55,7 +23,7 @@ func (s *UserStore) Create(ctx context.Context, tx *sql.Tx, user *User) error {
 		sqlc.CreateUserParams{
 			Username: user.Username,
 			Email:    user.Email,
-			Password: user.Password.hash,
+			Password: user.Password.Hash,
 			RoleID:   int32(user.RoleID),
 		},
 	)
@@ -88,7 +56,7 @@ func (s *UserStore) RevertCreateAndInvite(ctx context.Context, id int64) error {
 	})
 }
 
-func (s *UserStore) GetByID(ctx context.Context, id int64) (*User, error) {
+func (s *UserStore) GetByID(ctx context.Context, id int64) (*domain.User, error) {
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
 	defer cancel()
 
@@ -102,14 +70,14 @@ func (s *UserStore) GetByID(ctx context.Context, id int64) (*User, error) {
 		}
 	}
 
-	return &User{
+	return &domain.User{
 		ID:        row.ID,
 		Username:  row.Username,
 		Email:     row.Email,
 		CreatedAt: row.CreatedAt.String(),
 		IsActive:  row.IsActive,
 		RoleID:    row.RoleID,
-		Role: Role{
+		Role: domain.Role{
 			ID:          row.RoleID,
 			Name:        row.RoleName,
 			Description: row.RoleDescription.String,
@@ -118,7 +86,7 @@ func (s *UserStore) GetByID(ctx context.Context, id int64) (*User, error) {
 	}, nil
 }
 
-func (s *UserStore) GetByEmail(ctx context.Context, email string) (*User, error) {
+func (s *UserStore) GetByEmail(ctx context.Context, email string) (*domain.User, error) {
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
 	defer cancel()
 
@@ -126,20 +94,17 @@ func (s *UserStore) GetByEmail(ctx context.Context, email string) (*User, error)
 	if err != nil {
 		return nil, err
 	}
-	user := User{
-		ID:       row.ID,
-		Username: row.Username,
-		Email:    row.Email,
-		Password: password{
-			hash: row.Password,
-		},
+	user := domain.User{
+		ID:        row.ID,
+		Username:  row.Username,
+		Email:     row.Email,
 		CreatedAt: row.CreatedAt.String(),
 		IsActive:  row.IsActive,
 	}
 	return &user, nil
 }
 
-func (s *UserStore) CreateAndInvite(ctx context.Context, user *User, token string, expiration time.Duration) error {
+func (s *UserStore) CreateAndInvite(ctx context.Context, user *domain.User, token string, expiration time.Duration) error {
 	return withTransaction(s.db, ctx, func(tx *sql.Tx) error {
 		if err := s.Create(ctx, tx, user); err != nil {
 			return err

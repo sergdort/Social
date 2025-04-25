@@ -8,6 +8,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
+	"github.com/sergdort/Social/business/domain"
 	"github.com/sergdort/Social/internal/mailer"
 	"github.com/sergdort/Social/internal/store"
 	"math/rand"
@@ -54,13 +55,13 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	role, err := app.store.Roles.GetByRoleType(r.Context(), store.RoleTypeUser)
+	role, err := app.store.Roles.GetByRoleType(r.Context(), domain.RoleTypeUser)
 	if err != nil {
 		app.internalServerError(w, r, err)
 		return
 	}
 
-	user := &store.User{
+	user := &domain.User{
 		Username: payload.UserName,
 		Email:    payload.Email,
 		RoleID:   role.ID,

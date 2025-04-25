@@ -5,19 +5,19 @@ mockname: "Mock{{.InterfaceName}}"
 outpkg: "{{.PackageName}}"
 inpackage: True
 packages:
-  github.com/sergdort/Social/internal/store/cache:
-    interfaces:
-      UsersCache:
   github.com/sergdort/Social/internal/auth:
     interfaces:
       Authenticator:
+  github.com/sergdort/Social/business/domain:
+    interfaces:
+      UsersCache:
+      UsersRepository:
+      RolesRepository:
   github.com/sergdort/Social/internal/store:
     interfaces:
       PostsRepository:
-      UsersRepository:
       CommentsRepository:
       FollowsRepository:
-      RolesRepository:
   github.com/sergdort/Social/internal/store/sqlc:
     interfaces:
       DBTX:

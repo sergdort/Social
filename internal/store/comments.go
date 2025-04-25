@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"database/sql"
+	"github.com/sergdort/Social/business/domain"
 	"github.com/sergdort/Social/internal/store/sqlc"
 )
 
@@ -13,7 +14,7 @@ type Comment struct {
 	Content   string `json:"content"`
 	CreatedAt string `json:"created_at"`
 
-	User User `json:"user"`
+	User domain.User `json:"user"`
 }
 
 type CommentStore struct {
@@ -67,7 +68,7 @@ func convertToComment(row sqlc.GetAllCommentsByPostIDRow) Comment {
 		UserID:    row.UserID,
 		Content:   row.Content.String,
 		CreatedAt: row.CreatedAt.String(),
-		User: User{
+		User: domain.User{
 			ID:       row.UserID,
 			Username: row.Username,
 		},

@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/sergdort/Social/business/domain"
 	"github.com/sergdort/Social/internal/auth"
 	"github.com/sergdort/Social/internal/store"
 	"github.com/sergdort/Social/internal/store/cache"
@@ -17,16 +18,16 @@ func newTestApplication(t *testing.T, cfg config) *application {
 		config: cfg,
 		store: store.Storage{
 			Posts:    store.NewMockPostsRepository(t),
-			Users:    store.NewMockUsersRepository(t),
+			Users:    domain.NewMockUsersRepository(t),
 			Comments: store.NewMockCommentsRepository(t),
 			Follows:  store.NewMockFollowsRepository(t),
-			Roles:    store.NewMockRolesRepository(t),
+			Roles:    domain.NewMockRolesRepository(t),
 		},
 		logger:        zap.NewNop().Sugar(),
 		mailer:        nil,
 		authenticator: auth.NewMockAuthenticator(t),
 		cache: cache.Storage{
-			Users: cache.NewMockUsersCache(t),
+			Users: domain.NewMockUsersCache(t),
 		},
 	}
 }

@@ -5,6 +5,7 @@ import (
 	"expvar"
 	"fmt"
 	"github.com/redis/go-redis/v9"
+	"github.com/sergdort/Social/business/domain"
 	"github.com/sergdort/Social/cmd/api/debug"
 	"github.com/sergdort/Social/internal/auth"
 	"github.com/sergdort/Social/internal/db"
@@ -127,6 +128,9 @@ func main() {
 		mailer:        mail,
 		authenticator: authenticator,
 		cache:         cacheStorage,
+		useCase: useCases{
+			Users: domain.NewUsersUseCase(cacheStorage.Users, s.Users),
+		},
 	}
 	ctx := context.Background()
 	// TODO: Pass build type

@@ -1,18 +1,12 @@
 package cache
 
 import (
-	"context"
 	"github.com/redis/go-redis/v9"
-	"github.com/sergdort/Social/internal/store"
+	"github.com/sergdort/Social/business/domain"
 )
 
 type Storage struct {
-	Users UsersCache
-}
-
-type UsersCache interface {
-	Get(ctx context.Context, id int64) (*store.User, error)
-	Set(ctx context.Context, user *store.User) error
+	Users domain.UsersCache
 }
 
 func NewStorage(rdb *redis.Client) Storage {

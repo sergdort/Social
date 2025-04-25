@@ -1,9 +1,8 @@
 package main
 
 import (
+	"github.com/sergdort/Social/business/domain"
 	"github.com/sergdort/Social/internal/auth"
-	"github.com/sergdort/Social/internal/store"
-	"github.com/sergdort/Social/internal/store/cache"
 	"github.com/stretchr/testify/mock"
 	"net/http"
 	"testing"
@@ -19,7 +18,7 @@ func TestGetUser(t *testing.T) {
 	mux := app.mount()
 
 	t.Cleanup(func() {
-		mockCacheStore := app.cache.Users.(*cache.MockUsersCache)
+		mockCacheStore := app.cache.Users.(*domain.MockUsersCache)
 		mockCacheStore.Calls = nil
 	})
 
@@ -41,11 +40,11 @@ func TestGetUser(t *testing.T) {
 		mockAuth := app.authenticator.(*auth.MockAuthenticator)
 		mockAuth.Mock.On("ValidateToken", fakeToken).Return(makeFakeToken(fakeToken, userID), nil)
 
-		mockCacheStore := app.cache.Users.(*cache.MockUsersCache)
-		mockCacheStore.Mock.On("Get", mock.Anything, int64(userID)).Return(&store.User{ID: int64(userID)}, nil)
+		mockCacheStore := app.cache.Users.(*domain.MockUsersCache)
+		mockCacheStore.Mock.On("Get", mock.Anything, int64(userID)).Return(&domain.User{ID: int64(userID)}, nil)
 
-		mockUsersStore := app.store.Users.(*store.MockUsersRepository)
-		mockUsersStore.Mock.On("GetByID", mock.Anything, int64(1)).Return(&store.User{ID: 1}, nil)
+		mockUsersStore := app.store.Users.(*domain.MockUsersRepository)
+		mockUsersStore.Mock.On("GetByID", mock.Anything, int64(1)).Return(&domain.User{ID: 1}, nil)
 
 		req, err := http.NewRequest(http.MethodGet, "/v1/users/1", nil)
 		if err != nil {

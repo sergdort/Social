@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/redis/go-redis/v9"
-	"github.com/sergdort/Social/internal/store"
+	"github.com/sergdort/Social/business/domain"
 	"time"
 )
 
@@ -13,14 +13,14 @@ type UsersStore struct {
 	rdb *redis.Client
 }
 
-func (s *UsersStore) Get(ctx context.Context, id int64) (*store.User, error) {
+func (s *UsersStore) Get(ctx context.Context, id int64) (*domain.User, error) {
 	key := cacheKey(id)
 	data, err := s.rdb.Get(ctx, key).Result()
 	if err != nil {
 		return nil, err
 	}
 
-	var user store.User
+	var user domain.User
 	if data == "" {
 		return nil, nil
 	}
@@ -31,7 +31,7 @@ func (s *UsersStore) Get(ctx context.Context, id int64) (*store.User, error) {
 	return &user, nil
 }
 
-func (s *UsersStore) Set(ctx context.Context, user *store.User) error {
+func (s *UsersStore) Set(ctx context.Context, user *domain.User) error {
 	key := cacheKey(user.ID)
 
 	json, err := json.Marshal(user)

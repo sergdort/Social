@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"github.com/sergdort/Social/business/domain"
 	"github.com/sergdort/Social/internal/store"
 	"log"
 	"math/rand"
@@ -46,7 +47,7 @@ func Seed(store store.Storage, db *sql.DB) {
 	log.Println("seeding complete")
 }
 
-func generateComments(count int, posts []*store.Post, users []*store.User) []*store.Comment {
+func generateComments(count int, posts []*store.Post, users []*domain.User) []*store.Comment {
 	var comments []*store.Comment
 
 	for _, post := range posts {
@@ -63,7 +64,7 @@ func generateComments(count int, posts []*store.Post, users []*store.User) []*st
 	return comments
 }
 
-func generatePosts(users []*store.User) []*store.Post {
+func generatePosts(users []*domain.User) []*store.Post {
 	posts := make([]*store.Post, len(seedPosts))
 
 	for i, seed := range seedPosts {
@@ -78,11 +79,11 @@ func generatePosts(users []*store.User) []*store.Post {
 	return posts
 }
 
-func generateUsers() []*store.User {
-	users := make([]*store.User, len(usernames))
+func generateUsers() []*domain.User {
+	users := make([]*domain.User, len(usernames))
 
 	for i, username := range usernames {
-		user := &store.User{
+		user := &domain.User{
 			ID:        0,
 			Username:  username,
 			Email:     fmt.Sprintf("%s@example.com", username),

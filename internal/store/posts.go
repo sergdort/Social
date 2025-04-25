@@ -4,20 +4,21 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"github.com/sergdort/Social/business/domain"
 	"github.com/sergdort/Social/internal/store/sqlc"
 )
 
 type Post struct {
-	ID        int64     `json:"id"`
-	Content   string    `json:"content"`
-	Title     string    `json:"title"`
-	UserID    int64     `json:"user_id"`
-	CreatedAt string    `json:"created_at"`
-	UpdatedAt string    `json:"updated_at"`
-	Tags      []string  `json:"tags"`
-	Comments  []Comment `json:"comments"`
-	Version   int64     `json:"version"`
-	User      User      `json:"user"`
+	ID        int64       `json:"id"`
+	Content   string      `json:"content"`
+	Title     string      `json:"title"`
+	UserID    int64       `json:"user_id"`
+	CreatedAt string      `json:"created_at"`
+	UpdatedAt string      `json:"updated_at"`
+	Tags      []string    `json:"tags"`
+	Comments  []Comment   `json:"comments"`
+	Version   int64       `json:"version"`
+	User      domain.User `json:"user"`
 }
 
 type PostWithMetadata struct {
@@ -146,7 +147,7 @@ func convertToPostWithMetadata(feedRow sqlc.GetUserFeedRow) PostWithMetadata {
 			UserID:    feedRow.UserID,
 			CreatedAt: feedRow.CreatedAt.String(),
 			Tags:      feedRow.Tags,
-			User: User{
+			User: domain.User{
 				ID:       feedRow.UserID,
 				Username: feedRow.Username.String,
 			},

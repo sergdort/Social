@@ -5,7 +5,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/sergdort/Social/internal/store"
+	"github.com/sergdort/Social/business/domain"
 	"net/http"
 	"strconv"
 	"strings"
@@ -79,7 +79,7 @@ func (app *application) AuthTokenMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func (app *application) checkPostOwnershipMiddleware(roleType store.RoleType, next http.HandlerFunc) http.HandlerFunc {
+func (app *application) checkPostOwnershipMiddleware(roleType domain.RoleType, next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		currentUser := getAuthUserFromContext(r)
 		post := getPostFromContext(r)
@@ -103,11 +103,11 @@ func (app *application) checkPostOwnershipMiddleware(roleType store.RoleType, ne
 	})
 }
 
-func getAuthUserFromContext(r *http.Request) *store.User {
-	return r.Context().Value(authUserCtx).(*store.User)
+func getAuthUserFromContext(r *http.Request) *domain.User {
+	return r.Context().Value(authUserCtx).(*domain.User)
 }
 
-func (app *application) checkRolePrecedenceForPost(user *store.User, ctx context.Context, roleType store.RoleType) (bool, error) {
+func (app *application) checkRolePrecedenceForPost(user *domain.User, ctx context.Context, roleType domain.RoleType) (bool, error) {
 	role, err := app.store.Roles.GetByRoleType(ctx, roleType)
 	if err != nil {
 		return false, err
@@ -115,7 +115,7 @@ func (app *application) checkRolePrecedenceForPost(user *store.User, ctx context
 	return user.Role.Level >= role.Level, nil
 }
 
-func (app *application) getUser(ctx context.Context, userID int64) (*store.User, error) {
+func (app *application) getUser(ctx context.Context, userID int64) (*domain.User, error) {
 	// Try to get user from cache
 	if user, err := app.cache.Users.Get(ctx, userID); err == nil && user != nil {
 		return user, nil

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"github.com/go-chi/chi/v5"
+	"github.com/sergdort/Social/business/domain"
 	"github.com/sergdort/Social/internal/store"
 	"net/http"
 	"strconv"
@@ -115,8 +116,8 @@ func (app *application) userContextMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func getUserFromContext(r *http.Request) *store.User {
-	user, _ := r.Context().Value(userCtx).(*store.User)
+func getUserFromContext(r *http.Request) *domain.User {
+	user, _ := r.Context().Value(userCtx).(*domain.User)
 	return user
 }
 
