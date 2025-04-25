@@ -4,12 +4,12 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/sergdort/Social/business/domain"
+	"github.com/sergdort/Social/business/platform/mailer"
 	s "github.com/sergdort/Social/business/platform/store"
 	"github.com/sergdort/Social/business/platform/store/cache"
 	"github.com/sergdort/Social/docs" // This is required to generate Swagger docs
 	"github.com/sergdort/Social/foundation/web"
 	"github.com/sergdort/Social/internal/auth"
-	"github.com/sergdort/Social/internal/mailer"
 	httpSwagger "github.com/swaggo/http-swagger"
 	"go.uber.org/zap"
 	"net/http"
