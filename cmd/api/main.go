@@ -6,13 +6,13 @@ import (
 	"fmt"
 	"github.com/redis/go-redis/v9"
 	"github.com/sergdort/Social/business/domain"
+	"github.com/sergdort/Social/business/platform/store"
+	cache2 "github.com/sergdort/Social/business/platform/store/cache"
 	"github.com/sergdort/Social/cmd/api/debug"
 	"github.com/sergdort/Social/internal/auth"
 	"github.com/sergdort/Social/internal/db"
 	"github.com/sergdort/Social/internal/env"
 	"github.com/sergdort/Social/internal/mailer"
-	"github.com/sergdort/Social/internal/store"
-	"github.com/sergdort/Social/internal/store/cache"
 	"go.uber.org/zap"
 	"net/http"
 	"os"
@@ -108,10 +108,10 @@ func main() {
 	)
 	var rdb *redis.Client
 	if cfg.redisCfg.enabled {
-		rdb = cache.NewRedisClient(cfg.redisCfg.addr, cfg.redisCfg.pw, cfg.redisCfg.db)
+		rdb = cache2.NewRedisClient(cfg.redisCfg.addr, cfg.redisCfg.pw, cfg.redisCfg.db)
 		logger.Infow("Redis connected")
 	}
-	cacheStorage := cache.NewStorage(rdb)
+	cacheStorage := cache2.NewStorage(rdb)
 
 	s := store.NewStorage(database)
 

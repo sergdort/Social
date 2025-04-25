@@ -3,9 +3,9 @@ package main
 import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/sergdort/Social/business/domain"
+	"github.com/sergdort/Social/business/platform/store"
+	"github.com/sergdort/Social/business/platform/store/cache"
 	"github.com/sergdort/Social/internal/auth"
-	"github.com/sergdort/Social/internal/store"
-	"github.com/sergdort/Social/internal/store/cache"
 	"go.uber.org/zap"
 	"net/http"
 	"net/http/httptest"

@@ -3,7 +3,7 @@ package store
 import (
 	"context"
 	"errors"
-	"github.com/sergdort/Social/internal/store/sqlc"
+	sqlc2 "github.com/sergdort/Social/business/platform/store/sqlc"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"testing"
@@ -19,7 +19,7 @@ VALUES ($1, $2)
 		userID := int64(42)
 		followerID := int64(43)
 		ctx := context.Background()
-		mockDB := sqlc.NewMockDBTX(t)
+		mockDB := sqlc2.NewMockDBTX(t)
 
 		mockDB.On(
 			"ExecContext",
@@ -35,7 +35,7 @@ VALUES ($1, $2)
 		}, nil)
 
 		store := FollowsStore{
-			queries: sqlc.New(mockDB),
+			queries: sqlc2.New(mockDB),
 		}
 
 		err := store.Follow(ctx, userID, followerID)
@@ -49,7 +49,7 @@ VALUES ($1, $2)
 		userID := int64(42)
 		followerID := int64(43)
 		ctx := context.Background()
-		mockDB := sqlc.NewMockDBTX(t)
+		mockDB := sqlc2.NewMockDBTX(t)
 
 		fakeError := errors.New("something went wrong")
 		mockDB.On(
@@ -66,7 +66,7 @@ VALUES ($1, $2)
 		}, fakeError)
 
 		store := FollowsStore{
-			queries: sqlc.New(mockDB),
+			queries: sqlc2.New(mockDB),
 		}
 
 		err := store.Follow(ctx, userID, followerID)
@@ -84,7 +84,7 @@ WHERE user_id = $1
 		userID := int64(42)
 		followerID := int64(43)
 		ctx := context.Background()
-		mockDB := sqlc.NewMockDBTX(t)
+		mockDB := sqlc2.NewMockDBTX(t)
 
 		mockDB.On(
 			"ExecContext",
@@ -100,7 +100,7 @@ WHERE user_id = $1
 		}, nil)
 
 		store := FollowsStore{
-			queries: sqlc.New(mockDB),
+			queries: sqlc2.New(mockDB),
 		}
 
 		err := store.Unfollow(ctx, userID, followerID)
@@ -114,7 +114,7 @@ WHERE user_id = $1
 		userID := int64(42)
 		followerID := int64(43)
 		ctx := context.Background()
-		mockDB := sqlc.NewMockDBTX(t)
+		mockDB := sqlc2.NewMockDBTX(t)
 
 		mockDB.On(
 			"ExecContext",
@@ -130,7 +130,7 @@ WHERE user_id = $1
 		}, nil)
 
 		store := FollowsStore{
-			queries: sqlc.New(mockDB),
+			queries: sqlc2.New(mockDB),
 		}
 
 		err := store.Unfollow(ctx, userID, followerID)

@@ -5,13 +5,13 @@ import (
 	"database/sql"
 	"errors"
 	"github.com/sergdort/Social/business/domain"
-	"github.com/sergdort/Social/internal/store/sqlc"
+	sqlc2 "github.com/sergdort/Social/business/platform/store/sqlc"
 	"time"
 )
 
 type UserStore struct {
 	db      *sql.DB
-	queries *sqlc.Queries
+	queries *sqlc2.Queries
 }
 
 func (s *UserStore) Create(ctx context.Context, tx *sql.Tx, user *domain.User) error {
@@ -20,7 +20,7 @@ func (s *UserStore) Create(ctx context.Context, tx *sql.Tx, user *domain.User) e
 	defer cancel()
 	result, err := s.queries.WithTx(tx).CreateUser(
 		ctx,
-		sqlc.CreateUserParams{
+		sqlc2.CreateUserParams{
 			Username: user.Username,
 			Email:    user.Email,
 			Password: user.Password.Hash,
@@ -133,7 +133,7 @@ func (s *UserStore) activateUserByInvitationToken(ctx context.Context, token str
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
 	defer cancel()
 
-	err := s.queries.WithTx(tx).ActiveUserByInvitationToken(ctx, sqlc.ActiveUserByInvitationTokenParams{
+	err := s.queries.WithTx(tx).ActiveUserByInvitationToken(ctx, sqlc2.ActiveUserByInvitationTokenParams{
 		Token:  []byte(token),
 		Expiry: time.Now(),
 	})
@@ -159,7 +159,7 @@ func (s *UserStore) createUserInvitation(
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
 	defer cancel()
 
-	err := s.queries.WithTx(tx).CreateUserInvitation(ctx, sqlc.CreateUserInvitationParams{
+	err := s.queries.WithTx(tx).CreateUserInvitation(ctx, sqlc2.CreateUserInvitationParams{
 		Token:  []byte(token),
 		UserID: userID,
 		Expiry: time.Now().Add(expiration),

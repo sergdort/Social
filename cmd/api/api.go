@@ -3,13 +3,13 @@ package main
 import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/go-chi/cors"
 	"github.com/sergdort/Social/business/domain"
+	s "github.com/sergdort/Social/business/platform/store"
+	"github.com/sergdort/Social/business/platform/store/cache"
 	"github.com/sergdort/Social/docs" // This is required to generate Swagger docs
+	"github.com/sergdort/Social/foundation/web"
 	"github.com/sergdort/Social/internal/auth"
 	"github.com/sergdort/Social/internal/mailer"
-	s "github.com/sergdort/Social/internal/store"
-	"github.com/sergdort/Social/internal/store/cache"
 	httpSwagger "github.com/swaggo/http-swagger"
 	"go.uber.org/zap"
 	"net/http"
@@ -84,22 +84,16 @@ type sendGridConfig struct {
 
 func (app *application) mount() http.Handler {
 	var router = chi.NewRouter()
+	a := web.NewApp(router)
 
-	// Basic CORS
-	// for more ideas, see: https://developer.github.com/v3/#cross-origin-resource-sharing
-	router.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"https://*", "http://*"},
-		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
-		ExposedHeaders:   []string{"Link"},
-		AllowCredentials: false,
-		MaxAge:           300, // Maximum value not ignored by any of major browsers
-	}))
-
-	router.Use(middleware.Logger)
-	router.Use(middleware.Recoverer)
-	router.Use(middleware.RealIP)
-	router.Use(middleware.RequestID)
+	a.EnableCORS()
+	a.UseMiddleware(
+		middleware.RealIP,
+		middleware.RequestID,
+		middleware.Logger,
+		middleware.Recoverer,
+		middleware.Timeout(60*time.Second),
+	)
 
 	// Set a timeout value on the request context (ctx), that will signal
 	// through ctx.Done() that the request has timed out and further

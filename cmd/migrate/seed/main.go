@@ -1,9 +1,9 @@
 package main
 
 import (
+	"github.com/sergdort/Social/business/platform/store"
 	"github.com/sergdort/Social/internal/db"
 	"github.com/sergdort/Social/internal/env"
-	"github.com/sergdort/Social/internal/store"
 	"log"
 )
 

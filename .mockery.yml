@@ -16,6 +16,6 @@ packages:
       CommentsRepository:
       PostsRepository:
       FollowsRepository:
-  github.com/sergdort/Social/internal/store/sqlc:
+  github.com/sergdort/Social/business/platform/store/sqlc:
     interfaces:
       DBTX:

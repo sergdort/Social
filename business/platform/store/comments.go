@@ -4,11 +4,11 @@ import (
 	"context"
 	"database/sql"
 	"github.com/sergdort/Social/business/domain"
-	"github.com/sergdort/Social/internal/store/sqlc"
+	sqlc2 "github.com/sergdort/Social/business/platform/store/sqlc"
 )
 
 type CommentStore struct {
-	queries *sqlc.Queries
+	queries *sqlc2.Queries
 }
 
 func (s *CommentStore) Create(ctx context.Context, comment *domain.Comment) error {
@@ -17,7 +17,7 @@ func (s *CommentStore) Create(ctx context.Context, comment *domain.Comment) erro
 
 	defer cancel()
 
-	result, err := s.queries.CreateComment(ctx, sqlc.CreateCommentParams{
+	result, err := s.queries.CreateComment(ctx, sqlc2.CreateCommentParams{
 		PostID: comment.PostID,
 		UserID: comment.UserID,
 		Content: sql.NullString{
@@ -51,7 +51,7 @@ func (s *CommentStore) GetAllByPostID(ctx context.Context, postID int64) ([]doma
 	return comments, nil
 }
 
-func convertToComment(row sqlc.GetAllCommentsByPostIDRow) domain.Comment {
+func convertToComment(row sqlc2.GetAllCommentsByPostIDRow) domain.Comment {
 	return domain.Comment{
 		ID:        row.ID,
 		PostID:    row.PostID,

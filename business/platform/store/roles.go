@@ -3,7 +3,7 @@ package store
 import (
 	"context"
 	"github.com/sergdort/Social/business/domain"
-	"github.com/sergdort/Social/internal/store/sqlc"
+	"github.com/sergdort/Social/business/platform/store/sqlc"
 )
 
 type RolesStore struct {

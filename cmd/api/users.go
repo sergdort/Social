@@ -5,7 +5,7 @@ import (
 	"errors"
 	"github.com/go-chi/chi/v5"
 	"github.com/sergdort/Social/business/domain"
-	"github.com/sergdort/Social/internal/store"
+	"github.com/sergdort/Social/business/platform/store"
 	"net/http"
 	"strconv"
 )

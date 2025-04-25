@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/sergdort/Social/business/domain"
-	"github.com/sergdort/Social/internal/store"
+	"github.com/sergdort/Social/business/platform/store"
 	"log"
 	"math/rand"
 	"time"
