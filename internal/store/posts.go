@@ -8,29 +8,11 @@ import (
 	"github.com/sergdort/Social/internal/store/sqlc"
 )
 
-type Post struct {
-	ID        int64       `json:"id"`
-	Content   string      `json:"content"`
-	Title     string      `json:"title"`
-	UserID    int64       `json:"user_id"`
-	CreatedAt string      `json:"created_at"`
-	UpdatedAt string      `json:"updated_at"`
-	Tags      []string    `json:"tags"`
-	Comments  []Comment   `json:"comments"`
-	Version   int64       `json:"version"`
-	User      domain.User `json:"user"`
-}
-
-type PostWithMetadata struct {
-	Post
-	CommentsCount int64 `json:"comments_count"`
-}
-
 type PostStore struct {
 	queries *sqlc.Queries
 }
 
-func (s *PostStore) Create(ctx context.Context, post *Post) error {
+func (s *PostStore) Create(ctx context.Context, post *domain.Post) error {
 	row, err := s.queries.CreatePost(ctx, sqlc.CreatePostParams{
 		Content: post.Content,
 		Title:   post.Title,
@@ -49,7 +31,7 @@ func (s *PostStore) Create(ctx context.Context, post *Post) error {
 	return nil
 }
 
-func (s *PostStore) GetByID(ctx context.Context, id int64) (*Post, error) {
+func (s *PostStore) GetByID(ctx context.Context, id int64) (*domain.Post, error) {
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
 
 	defer cancel()
@@ -63,7 +45,7 @@ func (s *PostStore) GetByID(ctx context.Context, id int64) (*Post, error) {
 			return nil, err
 		}
 	}
-	return &Post{
+	return &domain.Post{
 		ID:        row.ID,
 		Content:   row.Content,
 		Title:     row.Title,
@@ -94,7 +76,7 @@ func (s *PostStore) Delete(ctx context.Context, id int64) error {
 	return nil
 }
 
-func (s *PostStore) Update(ctx context.Context, post *Post) error {
+func (s *PostStore) Update(ctx context.Context, post *domain.Post) error {
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
 
 	defer cancel()
@@ -123,7 +105,7 @@ func (s *PostStore) Update(ctx context.Context, post *Post) error {
 	return nil
 }
 
-func (s *PostStore) GetUserFeed(ctx context.Context, userId int64, q PaginatedFeedQuery) ([]PostWithMetadata, error) {
+func (s *PostStore) GetUserFeed(ctx context.Context, userId int64, q domain.PaginatedFeedQuery) ([]domain.PostWithMetadata, error) {
 	feed, err := s.queries.GetUserFeed(ctx, sqlc.GetUserFeedParams{
 		UserID:  userId,
 		Limit:   int32(q.Limit),
@@ -138,9 +120,9 @@ func (s *PostStore) GetUserFeed(ctx context.Context, userId int64, q PaginatedFe
 	return postsWithMetadata, nil
 }
 
-func convertToPostWithMetadata(feedRow sqlc.GetUserFeedRow) PostWithMetadata {
-	return PostWithMetadata{
-		Post: Post{
+func convertToPostWithMetadata(feedRow sqlc.GetUserFeedRow) domain.PostWithMetadata {
+	return domain.PostWithMetadata{
+		Post: domain.Post{
 			ID:        feedRow.ID,
 			Content:   feedRow.Content,
 			Title:     feedRow.Title,

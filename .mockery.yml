@@ -13,10 +13,8 @@ packages:
       UsersCache:
       UsersRepository:
       RolesRepository:
-  github.com/sergdort/Social/internal/store:
-    interfaces:
-      PostsRepository:
       CommentsRepository:
+      PostsRepository:
       FollowsRepository:
   github.com/sergdort/Social/internal/store/sqlc:
     interfaces:

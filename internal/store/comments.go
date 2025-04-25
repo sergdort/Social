@@ -7,21 +7,11 @@ import (
 	"github.com/sergdort/Social/internal/store/sqlc"
 )
 
-type Comment struct {
-	ID        int64  `json:"id"`
-	PostID    int64  `json:"post_id"`
-	UserID    int64  `json:"user_id"`
-	Content   string `json:"content"`
-	CreatedAt string `json:"created_at"`
-
-	User domain.User `json:"user"`
-}
-
 type CommentStore struct {
 	queries *sqlc.Queries
 }
 
-func (s *CommentStore) Create(ctx context.Context, comment *Comment) error {
+func (s *CommentStore) Create(ctx context.Context, comment *domain.Comment) error {
 
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
 
@@ -46,7 +36,7 @@ func (s *CommentStore) Create(ctx context.Context, comment *Comment) error {
 	return nil
 }
 
-func (s *CommentStore) GetAllByPostID(ctx context.Context, postID int64) ([]Comment, error) {
+func (s *CommentStore) GetAllByPostID(ctx context.Context, postID int64) ([]domain.Comment, error) {
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
 
 	defer cancel()
@@ -61,8 +51,8 @@ func (s *CommentStore) GetAllByPostID(ctx context.Context, postID int64) ([]Comm
 	return comments, nil
 }
 
-func convertToComment(row sqlc.GetAllCommentsByPostIDRow) Comment {
-	return Comment{
+func convertToComment(row sqlc.GetAllCommentsByPostIDRow) domain.Comment {
+	return domain.Comment{
 		ID:        row.ID,
 		PostID:    row.PostID,
 		UserID:    row.UserID,

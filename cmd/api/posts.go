@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"github.com/go-chi/chi/v5"
+	"github.com/sergdort/Social/business/domain"
 	"github.com/sergdort/Social/internal/store"
 	"net/http"
 	"strconv"
@@ -54,7 +55,7 @@ func (app *application) createPostsHandler(w http.ResponseWriter, r *http.Reques
 
 	user := getAuthUserFromContext(r)
 
-	var post = &store.Post{
+	var post = &domain.Post{
 		Title:   payload.Title,
 		Content: payload.Content,
 		Tags:    payload.Tags,
@@ -212,12 +213,12 @@ func (app *application) getPostId(r *http.Request) (int64, error) {
 	return postID, err
 }
 
-func getPostFromContext(r *http.Request) *store.Post {
-	post, _ := r.Context().Value(postCtx).(*store.Post)
+func getPostFromContext(r *http.Request) *domain.Post {
+	post, _ := r.Context().Value(postCtx).(*domain.Post)
 	return post
 }
 
-func (p *UpdatePostPayload) update(post *store.Post) {
+func (p *UpdatePostPayload) update(post *domain.Post) {
 	if p.Title != nil {
 		post.Title = *p.Title
 	}

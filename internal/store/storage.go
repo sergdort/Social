@@ -16,29 +16,11 @@ var ErrDuplicateUsername = errors.New("username already exists")
 const QueryTimeoutDuration = 5 * time.Second
 
 type Storage struct {
-	Posts    PostsRepository
+	Posts    domain.PostsRepository
 	Users    domain.UsersRepository
-	Comments CommentsRepository
-	Follows  FollowsRepository
+	Comments domain.CommentsRepository
+	Follows  domain.FollowsRepository
 	Roles    domain.RolesRepository
-}
-
-type PostsRepository interface {
-	Create(ctx context.Context, post *Post) error
-	GetByID(ctx context.Context, id int64) (*Post, error)
-	Delete(ctx context.Context, id int64) error
-	Update(ctx context.Context, post *Post) error
-	GetUserFeed(ctx context.Context, userId int64, query PaginatedFeedQuery) ([]PostWithMetadata, error)
-}
-
-type CommentsRepository interface {
-	Create(ctx context.Context, comment *Comment) error
-	GetAllByPostID(ctx context.Context, postID int64) ([]Comment, error)
-}
-
-type FollowsRepository interface {
-	Follow(ctx context.Context, userID int64, followerID int64) error
-	Unfollow(ctx context.Context, userID int64, followerID int64) error
 }
 
 func NewStorage(db *sql.DB) Storage {

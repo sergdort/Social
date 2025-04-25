@@ -47,13 +47,13 @@ func Seed(store store.Storage, db *sql.DB) {
 	log.Println("seeding complete")
 }
 
-func generateComments(count int, posts []*store.Post, users []*domain.User) []*store.Comment {
-	var comments []*store.Comment
+func generateComments(count int, posts []*domain.Post, users []*domain.User) []*domain.Comment {
+	var comments []*domain.Comment
 
 	for _, post := range posts {
 		postComments := getRandomComments(count) // Generate random comments for the post
 		for _, postComment := range postComments {
-			comments = append(comments, &store.Comment{
+			comments = append(comments, &domain.Comment{
 				PostID:  post.ID,
 				UserID:  users[rand.Intn(len(users))].ID, // Pick a random user
 				Content: postComment,
@@ -64,11 +64,11 @@ func generateComments(count int, posts []*store.Post, users []*domain.User) []*s
 	return comments
 }
 
-func generatePosts(users []*domain.User) []*store.Post {
-	posts := make([]*store.Post, len(seedPosts))
+func generatePosts(users []*domain.User) []*domain.Post {
+	posts := make([]*domain.Post, len(seedPosts))
 
 	for i, seed := range seedPosts {
-		posts[i] = &store.Post{
+		posts[i] = &domain.Post{
 			UserID:  users[rand.Intn(len(users))].ID,
 			Title:   seed.Title,
 			Content: seed.Content,

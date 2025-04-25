@@ -1,14 +1,14 @@
 package main
 
 import (
-	"github.com/sergdort/Social/internal/store"
+	"github.com/sergdort/Social/business/domain"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
 )
 
-func ParsePaginatedFeedQuery(fq *store.PaginatedFeedQuery, r *http.Request) {
+func ParsePaginatedFeedQuery(fq *domain.PaginatedFeedQuery, r *http.Request) {
 	qs := r.URL.Query()
 
 	if limit, err := strconv.Atoi(qs.Get("limit")); err == nil {

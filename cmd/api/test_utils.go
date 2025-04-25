@@ -17,10 +17,10 @@ func newTestApplication(t *testing.T, cfg config) *application {
 	return &application{
 		config: cfg,
 		store: store.Storage{
-			Posts:    store.NewMockPostsRepository(t),
+			Posts:    domain.NewMockPostsRepository(t),
 			Users:    domain.NewMockUsersRepository(t),
-			Comments: store.NewMockCommentsRepository(t),
-			Follows:  store.NewMockFollowsRepository(t),
+			Comments: domain.NewMockCommentsRepository(t),
+			Follows:  domain.NewMockFollowsRepository(t),
 			Roles:    domain.NewMockRolesRepository(t),
 		},
 		logger:        zap.NewNop().Sugar(),

@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/sergdort/Social/internal/store"
+	"github.com/sergdort/Social/business/domain"
 	"net/http"
 )
 
@@ -25,7 +25,7 @@ import (
 //	@Security		ApiKeyAuth
 //	@Router			/users/feed [get]
 func (app *application) getUserFeedHandler(w http.ResponseWriter, r *http.Request) {
-	query := store.PaginatedFeedQuery{
+	query := domain.PaginatedFeedQuery{
 		Limit:  20,
 		Offset: 0,
 		SortBy: "desc",
