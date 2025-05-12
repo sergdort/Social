@@ -148,7 +148,7 @@ func main() {
 		authenticator: authenticator,
 		cache:         cacheStorage,
 		useCase: useCases{
-			Users: domain.NewUsersUseCase(cacheStorage.Users, s.Users),
+			Users: domain.NewUsersUseCase(cacheStorage.Users, s.Users, s.Follows),
 			Auth: domain.NewAuthUseCase(
 				domain.AuthConfig{
 					InvitationExp: cfg.mail.exp,
@@ -156,6 +156,7 @@ func main() {
 				},
 				s.Roles,
 				s.Users,
+				jwtAuth,
 				jwtAuth,
 			),
 		},

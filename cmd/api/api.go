@@ -148,11 +148,11 @@ func (app *application) mount(ctx context.Context, log *logger.Logger) http.Hand
 	//	})
 	//})
 
-	usersapp.Routes(webApp, usersapp.Config{app.useCase.Users})
+	usersapp.Routes(webApp, usersapp.Config{app.useCase.Auth, app.useCase.Users})
 	authapp.Routes(webApp, authapp.Config{app.useCase.Auth})
 
 	defer teardown(ctx)
-	
+
 	return webApp
 }
 

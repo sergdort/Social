@@ -43,23 +43,33 @@ type AuthConfig struct {
 	FrontendURL   string
 }
 
+type Claims struct {
+	UserID int64
+}
+
 type TokenGenerator interface {
 	GenerateToken(ctx context.Context, userID int64) (string, error)
 }
 
-type AuthUseCase struct {
-	config AuthConfig
-	roles  RolesRepository
-	users  UsersRepository
-	token  TokenGenerator
+type TokenValidator interface {
+	ValidateToken(ctx context.Context, token string) (Claims, error)
 }
 
-func NewAuthUseCase(config AuthConfig, roles RolesRepository, users UsersRepository, token TokenGenerator) *AuthUseCase {
+type AuthUseCase struct {
+	config     AuthConfig
+	roles      RolesRepository
+	users      UsersRepository
+	token      TokenGenerator
+	tokenValid TokenValidator
+}
+
+func NewAuthUseCase(config AuthConfig, roles RolesRepository, users UsersRepository, token TokenGenerator, tokenValid TokenValidator) *AuthUseCase {
 	return &AuthUseCase{
-		config: config,
-		roles:  roles,
-		users:  users,
-		token:  token,
+		config:     config,
+		roles:      roles,
+		users:      users,
+		token:      token,
+		tokenValid: tokenValid,
 	}
 }
 
@@ -107,6 +117,10 @@ func (auth *AuthUseCase) CreateToken(ctx context.Context, payload CreateUserToke
 		return "", err
 	}
 	return auth.token.GenerateToken(ctx, user.ID)
+}
+
+func (auth *AuthUseCase) ValidateToken(ctx context.Context, token string) (Claims, error) {
+	return auth.tokenValid.ValidateToken(ctx, token)
 }
 
 func hashToken(plainToken string) string {

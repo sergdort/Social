@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/sergdort/Social/business/domain"
+	"strconv"
 	"time"
 )
 
@@ -30,7 +32,7 @@ func NewJWTAutheticator(
 
 func (auth *JWTAutheticator) GenerateToken(ctx context.Context, userID int64) (string, error) {
 	claims := jwt.MapClaims{
-		"sub": userID,
+		"sub": fmt.Sprintf("%d", userID),
 		"exp": time.Now().Add(auth.expire).Unix(),
 		"iat": time.Now().Unix(),
 		"nbf": time.Now().Unix(),
@@ -39,6 +41,19 @@ func (auth *JWTAutheticator) GenerateToken(ctx context.Context, userID int64) (s
 	}
 
 	return auth.Generate(claims)
+}
+
+func (auth *JWTAutheticator) ValidateToken(ctx context.Context, token string) (domain.Claims, error) {
+	jwtToken, err := auth.Validate(token)
+	if err != nil {
+		return domain.Claims{}, err
+	}
+	claims := jwtToken.Claims.(jwt.MapClaims)
+	userID, err := strconv.ParseInt(claims["sub"].(string), 10, 64)
+	if err != nil {
+		return domain.Claims{}, err
+	}
+	return domain.Claims{userID}, nil
 }
 
 func (auth *JWTAutheticator) Generate(claims jwt.Claims) (string, error) {
@@ -51,7 +66,7 @@ func (auth *JWTAutheticator) Generate(claims jwt.Claims) (string, error) {
 	return tokenString, nil
 }
 
-func (auth *JWTAutheticator) ValidateToken(token string) (*jwt.Token, error) {
+func (auth *JWTAutheticator) Validate(token string) (*jwt.Token, error) {
 	return jwt.Parse(token, func(t *jwt.Token) (any, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method %v", t.Header["alg"])

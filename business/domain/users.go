@@ -40,14 +40,20 @@ func (p *Password) Verify(text string) error {
 }
 
 type UsersUseCase struct {
-	cache UsersCache
-	repo  UsersRepository
+	cache       UsersCache
+	usersRepo   UsersRepository
+	followsRepo FollowsRepository
 }
 
-func NewUsersUseCase(cache UsersCache, repo UsersRepository) *UsersUseCase {
+func NewUsersUseCase(
+	cache UsersCache,
+	usersRepo UsersRepository,
+	followsRepo FollowsRepository,
+) *UsersUseCase {
 	return &UsersUseCase{
-		cache: cache,
-		repo:  repo,
+		cache:       cache,
+		usersRepo:   usersRepo,
+		followsRepo: followsRepo,
 	}
 }
 
@@ -58,7 +64,7 @@ func (uc *UsersUseCase) GetUserById(ctx context.Context, userID int64) (*User, e
 	}
 
 	// Fetch from database
-	user, err := uc.repo.GetByID(ctx, userID)
+	user, err := uc.usersRepo.GetByID(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -68,6 +74,14 @@ func (uc *UsersUseCase) GetUserById(ctx context.Context, userID int64) (*User, e
 		// TODO: Log error?
 	}
 	return user, nil
+}
+
+func (uc *UsersUseCase) FollowUser(ctx context.Context, userID int64, followerID int64) error {
+	return uc.followsRepo.Follow(ctx, userID, followerID)
+}
+
+func (uc *UsersUseCase) UnfollowUser(ctx context.Context, userID int64, followerID int64) error {
+	return uc.followsRepo.Unfollow(ctx, userID, followerID)
 }
 
 type UsersCache interface {

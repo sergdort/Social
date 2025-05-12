@@ -3,6 +3,7 @@ package usersapp
 import (
 	"context"
 	"github.com/sergdort/Social/app/shared/errs"
+	"github.com/sergdort/Social/app/shared/mid"
 	"github.com/sergdort/Social/business/domain"
 	"github.com/sergdort/Social/foundation/web"
 	"net/http"
@@ -49,6 +50,35 @@ func (app *userApp) getUserHandler(ctx context.Context, r *http.Request) web.Enc
 	user := getUserFromContext(ctx)
 
 	return toAppUser(user)
+}
+
+// FollowUser godoc
+//
+//	@Summary		Follows a user
+//	@Description	Follows a user
+//	@Tags			users
+//	@Accept			json
+//	@Produce		json
+//	@Param			id	path		int	true	"User ID"
+//	@Success		204	{string}	No	Content
+//	@Failure		404	{object}	error
+//	@Failure		500	{object}	error
+//	@Security		ApiKeyAuth
+//	@Router			/users/{id}/follow [put]
+func (app *userApp) followUserHandler(ctx context.Context, r *http.Request) web.Encoder {
+	currentUserID, err := mid.GetUserID(ctx)
+	userToFollow := getUserFromContext(ctx)
+
+	if err != nil {
+		return errs.Newf(errs.Internal, "failed to get user from mid: %s", err)
+	}
+
+	err = app.usersUseCase.FollowUser(ctx, currentUserID, userToFollow.ID)
+
+	if err != nil {
+		return errs.New(errs.Internal, err)
+	}
+	return web.NewNoResponse()
 }
 
 func (app *userApp) userContextMiddleware(useCase *domain.UsersUseCase) web.MidFunc {
