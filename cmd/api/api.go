@@ -1,17 +1,20 @@
 package main
 
 import (
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
+	"context"
+	"fmt"
+	"github.com/sergdort/Social/app/domain/authapp"
+	"github.com/sergdort/Social/app/domain/usersapp"
+	"github.com/sergdort/Social/app/shared/mid"
 	"github.com/sergdort/Social/business/domain"
 	"github.com/sergdort/Social/business/platform/mailer"
 	s "github.com/sergdort/Social/business/platform/store"
 	"github.com/sergdort/Social/business/platform/store/cache"
 	"github.com/sergdort/Social/docs" // This is required to generate Swagger docs
+	"github.com/sergdort/Social/foundation/logger"
+	"github.com/sergdort/Social/foundation/otel"
 	"github.com/sergdort/Social/foundation/web"
 	"github.com/sergdort/Social/internal/auth"
-	httpSwagger "github.com/swaggo/http-swagger"
-	"go.uber.org/zap"
 	"net/http"
 	"time"
 )
@@ -26,7 +29,7 @@ type dbConfig struct {
 type application struct {
 	config        config
 	store         s.Storage
-	logger        *zap.SugaredLogger
+	logger        *logger.Logger
 	mailer        mailer.Mailer
 	authenticator auth.Authenticator
 	cache         cache.Storage
@@ -35,6 +38,7 @@ type application struct {
 
 type useCases struct {
 	Users *domain.UsersUseCase
+	Auth  *domain.AuthUseCase
 }
 
 type redisConfig struct {
@@ -55,6 +59,7 @@ type config struct {
 	frontEndURL     string
 	auth            authConfig
 	redisCfg        redisConfig
+	serviceName     string
 }
 
 type mailConfig struct {
@@ -82,66 +87,73 @@ type sendGridConfig struct {
 	apiKey string
 }
 
-func (app *application) mount() http.Handler {
-	var router = chi.NewRouter()
-	a := web.NewApp(router)
-
-	a.EnableCORS()
-	a.UseMiddleware(
-		middleware.RealIP,
-		middleware.RequestID,
-		middleware.Logger,
-		middleware.Recoverer,
-		middleware.Timeout(60*time.Second),
+func (app *application) mount(ctx context.Context, log *logger.Logger) http.Handler {
+	traceProvider, teardown, err := otel.InitTracing(log, otel.Config{
+		ServiceName: app.config.frontEndURL,
+		Host:        app.config.debugHost,
+		ExcludedRoutes: map[string]struct{}{
+			"/v1/liveness":  {},
+			"/v1/readiness": {},
+		},
+		Probability: 0.05,
+	})
+	if err != nil {
+		fmt.Errorf("starting tracing: %w", err)
+		return nil
+	}
+	tracer := traceProvider.Tracer(app.config.serviceName)
+	webApp := web.NewApp(mid.Otel(tracer),
+		mid.Logger(log),
+		mid.Errors(log),
+		mid.Metrics(),
+		mid.Panics(),
 	)
 
-	// Set a timeout value on the request context (ctx), that will signal
-	// through ctx.Done() that the request has timed out and further
-	// processing should be stopped.
-	router.Use(middleware.Timeout(60 * time.Second))
+	webApp.EnableCORS([]string{})
+	//
+	//router.Route("/v1", func(r chi.Router) {
+	//	r.With(app.BasicAuthMiddleware).Get("/health", app.healthHandler)
+	//	r.Get("/swagger/*", httpSwagger.Handler())
+	//
+	//	r.Route("/posts", func(r chi.Router) {
+	//		r.Use(app.AuthTokenMiddleware)
+	//		r.Post("/", app.createPostsHandler)
+	//
+	//		r.Route("/{postID}", func(r chi.Router) {
+	//			r.Use(app.postsContextMiddleware)
+	//			r.Get("/", app.getPostHandler)
+	//			r.Delete("/", app.checkPostOwnershipMiddleware(domain.RoleTypeAdmin, app.deletePostHandler))
+	//			r.Patch("/", app.checkPostOwnershipMiddleware(domain.RoleTypeModerator, app.patchPostsHandler))
+	//		})
+	//	})
+	//
+	//	r.Route("/users", func(r chi.Router) {
+	//		r.Put("/activate/{token}", app.activateUserHandler)
+	//		r.Route("/{userID}", func(r chi.Router) {
+	//			r.Use(app.AuthTokenMiddleware)
+	//			r.Use(app.userContextMiddleware)
+	//			//r.Get("/", app.getUserHandler)
+	//			r.Put("/follow", app.followUserHandler)
+	//			r.Put("/unfollow", app.unfollowUserHandler)
+	//		})
+	//
+	//		r.Group(func(r chi.Router) {
+	//			r.Get("/feed", app.getUserFeedHandler)
+	//		})
+	//	})
+	//
+	//	r.Route("/authentication", func(r chi.Router) {
+	//		r.Post("/user", app.registerUserHandler)
+	//		r.Post("/token", app.createTokenHandler)
+	//	})
+	//})
 
-	router.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("welcome"))
-	})
+	usersapp.Routes(webApp, usersapp.Config{app.useCase.Users})
+	authapp.Routes(webApp, authapp.Config{app.useCase.Auth})
 
-	router.Route("/v1", func(r chi.Router) {
-		r.With(app.BasicAuthMiddleware).Get("/health", app.healthHandler)
-		r.Get("/swagger/*", httpSwagger.Handler())
+	defer teardown(context.Background())
 
-		r.Route("/posts", func(r chi.Router) {
-			r.Use(app.AuthTokenMiddleware)
-			r.Post("/", app.createPostsHandler)
-
-			r.Route("/{postID}", func(r chi.Router) {
-				r.Use(app.postsContextMiddleware)
-				r.Get("/", app.getPostHandler)
-				r.Delete("/", app.checkPostOwnershipMiddleware(domain.RoleTypeAdmin, app.deletePostHandler))
-				r.Patch("/", app.checkPostOwnershipMiddleware(domain.RoleTypeModerator, app.patchPostsHandler))
-			})
-		})
-
-		r.Route("/users", func(r chi.Router) {
-			r.Put("/activate/{token}", app.activateUserHandler)
-			r.Route("/{userID}", func(r chi.Router) {
-				r.Use(app.AuthTokenMiddleware)
-				r.Use(app.userContextMiddleware)
-				r.Get("/", app.getUserHandler)
-				r.Put("/follow", app.followUserHandler)
-				r.Put("/unfollow", app.unfollowUserHandler)
-			})
-
-			r.Group(func(r chi.Router) {
-				r.Get("/feed", app.getUserFeedHandler)
-			})
-		})
-
-		r.Route("/authentication", func(r chi.Router) {
-			r.Post("/user", app.registerUserHandler)
-			r.Post("/token", app.createTokenHandler)
-		})
-	})
-
-	return router
+	return webApp
 }
 
 func (app *application) makeServer(mux http.Handler) *http.Server {
@@ -156,12 +168,5 @@ func (app *application) makeServer(mux http.Handler) *http.Server {
 		ReadTimeout:  10 * time.Second,
 		IdleTimeout:  time.Minute,
 	}
-
-	app.logger.Infow(
-		"Server has started",
-		"addr", app.config.address,
-		"env", app.config.env,
-	)
-
 	return server
 }

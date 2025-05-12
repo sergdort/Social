@@ -129,7 +129,7 @@ func (app *application) getUser(ctx context.Context, userID int64) (*domain.User
 
 	// Try to store in cache but don't fail if caching fails
 	if err := app.cache.Users.Set(ctx, user); err != nil {
-		app.logger.Warn("Failed to set user in cache", "userID", userID, "error", err)
+		app.logger.Warn(ctx, "Failed to set user in cache", "userID", userID, "error", err)
 	}
 
 	return user, nil

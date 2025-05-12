@@ -1,19 +1,25 @@
 package main
 
 import (
+	"context"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/sergdort/Social/business/domain"
 	"github.com/sergdort/Social/business/platform/store"
 	"github.com/sergdort/Social/business/platform/store/cache"
+	"github.com/sergdort/Social/foundation/logger"
+	"github.com/sergdort/Social/foundation/otel"
 	"github.com/sergdort/Social/internal/auth"
-	"go.uber.org/zap"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 	"time"
 )
 
 func newTestApplication(t *testing.T, cfg config) *application {
+	traceIDFn := func(ctx context.Context) string {
+		return otel.GetTraceID(ctx)
+	}
 	return &application{
 		config: cfg,
 		store: store.Storage{
@@ -23,7 +29,7 @@ func newTestApplication(t *testing.T, cfg config) *application {
 			Follows:  domain.NewMockFollowsRepository(t),
 			Roles:    domain.NewMockRolesRepository(t),
 		},
-		logger:        zap.NewNop().Sugar(),
+		logger:        logger.New(os.Stdout, logger.LevelDebug, "SOCIAL_TESTS", traceIDFn),
 		mailer:        nil,
 		authenticator: auth.NewMockAuthenticator(t),
 		cache: cache.Storage{

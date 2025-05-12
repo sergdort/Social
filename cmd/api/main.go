@@ -3,17 +3,18 @@ package main
 import (
 	"context"
 	"expvar"
-	"fmt"
 	"github.com/redis/go-redis/v9"
 	"github.com/sergdort/Social/business/domain"
+	"github.com/sergdort/Social/business/platform/jwt"
 	"github.com/sergdort/Social/business/platform/mailer"
 	"github.com/sergdort/Social/business/platform/store"
 	cache2 "github.com/sergdort/Social/business/platform/store/cache"
 	"github.com/sergdort/Social/cmd/api/debug"
+	"github.com/sergdort/Social/foundation/logger"
+	"github.com/sergdort/Social/foundation/otel"
 	"github.com/sergdort/Social/internal/auth"
 	"github.com/sergdort/Social/internal/db"
 	"github.com/sergdort/Social/internal/env"
-	"go.uber.org/zap"
 	"net/http"
 	"os"
 	"os/signal"
@@ -77,11 +78,19 @@ func main() {
 				tokenHost: env.GetString("JWT_TOKEN_HOST", "social"),
 			},
 		},
+		serviceName: env.GetString("SERVICE_NAME", "social"),
 	}
-	// Logger
-	logger := zap.Must(zap.NewProduction()).Sugar()
-	defer logger.Sync()
-
+	ctx := context.Background()
+	var log *logger.Logger
+	events := logger.Events{
+		Error: func(ctx context.Context, r logger.Record) {
+			log.Info(ctx, "******* SEND ALERT *******")
+		},
+	}
+	traceIDFn := func(ctx context.Context) string {
+		return otel.GetTraceID(ctx)
+	}
+	log = logger.NewWithEvents(os.Stdout, logger.LevelInfo, "SOCIAL", traceIDFn, events)
 	// Mailer
 	mail := mailer.NewSendgridMailer(cfg.mail.fromEmail, cfg.mail.sendGridConfig.apiKey)
 
@@ -94,12 +103,14 @@ func main() {
 	)
 
 	if err != nil {
-		logger.Fatal(err)
+		log.Error(ctx, "startup", "err", err)
+		os.Exit(1)
 	}
 
 	defer database.Close()
 
-	logger.Infow(
+	log.Info(
+		ctx,
 		"DB connected",
 		"addr", cfg.db.addr,
 		"maxOpenConns", cfg.db.maxOpenConns,
@@ -109,7 +120,7 @@ func main() {
 	var rdb *redis.Client
 	if cfg.redisCfg.enabled {
 		rdb = cache2.NewRedisClient(cfg.redisCfg.addr, cfg.redisCfg.pw, cfg.redisCfg.db)
-		logger.Infow("Redis connected")
+		log.Info(ctx, "Redis connected")
 	}
 	cacheStorage := cache2.NewStorage(rdb)
 
@@ -121,39 +132,56 @@ func main() {
 		cfg.auth.jwt.tokenHost,
 	)
 
+	jwtAuth := jwt.NewJWTAutheticator(
+		cfg.auth.jwt.secret,
+		cfg.auth.jwt.tokenHost,
+		cfg.auth.jwt.tokenHost,
+		cfg.auth.jwt.tokenHost,
+		cfg.auth.jwt.exp,
+	)
+
 	var app = &application{
 		config:        cfg,
 		store:         s,
-		logger:        logger,
+		logger:        log,
 		mailer:        mail,
 		authenticator: authenticator,
 		cache:         cacheStorage,
 		useCase: useCases{
 			Users: domain.NewUsersUseCase(cacheStorage.Users, s.Users),
+			Auth: domain.NewAuthUseCase(
+				domain.AuthConfig{
+					InvitationExp: cfg.mail.exp,
+					FrontendURL:   cfg.frontEndURL,
+				},
+				s.Roles,
+				s.Users,
+				jwtAuth,
+			),
 		},
 	}
-	ctx := context.Background()
 	// TODO: Pass build type
 	expvar.NewString("build").Set("develop")
 
 	go func() {
-		logger.Infow(
+		log.Info(
+			ctx,
 			"debug v1 router started",
 			"host", cfg.debugHost,
 		)
 		if err := http.ListenAndServe(cfg.debugHost, debug.Mux()); err != nil {
-			logger.Errorw("debug v1 router stopped", "host", cfg.debugHost, "err", err)
+			log.Error(ctx, "debug v1 router stopped", "host", cfg.debugHost, "err", err)
 		}
 	}()
 
 	serverErrors := make(chan error, 1)
-	server := app.makeServer(app.mount())
+	server := app.makeServer(app.mount(ctx, log))
 
 	shutdown := make(chan os.Signal, 1)
 	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)
 
 	go func() {
-		logger.Infow("api router started", "host", cfg.apiURL)
+		log.Info(ctx, "api router started", "host", cfg.apiURL)
 
 		serverErrors <- server.ListenAndServe()
 	}()
@@ -163,17 +191,17 @@ func main() {
 
 	select {
 	case err := <-serverErrors:
-		logger.Infow("api router stopped", "host", cfg.apiURL, "err", err)
+		log.Info(ctx, "api router stopped", "host", cfg.apiURL, "err", err)
 	case sig := <-shutdown:
-		logger.Infow("shutdown started", "status", sig)
-		defer logger.Infow("shutdown complete", "signal", sig)
+		log.Info(ctx, "shutdown started", "status", sig)
+		defer log.Info(ctx, "shutdown complete", "signal", sig)
 
 		ctx, cancel := context.WithTimeout(ctx, cfg.shutDownTimeout)
 		defer cancel()
 
 		if err := server.Shutdown(ctx); err != nil {
 			server.Close()
-			fmt.Errorf("could not stop server gracefully: %w", err)
+			log.Error(ctx, "could not stop server gracefully: %w", err)
 		}
 	}
 }

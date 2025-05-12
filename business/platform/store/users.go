@@ -100,6 +100,9 @@ func (s *UserStore) GetByEmail(ctx context.Context, email string) (*domain.User,
 		Email:     row.Email,
 		CreatedAt: row.CreatedAt.String(),
 		IsActive:  row.IsActive,
+		Password: domain.Password{
+			Hash: row.Password,
+		},
 	}
 	return &user, nil
 }
