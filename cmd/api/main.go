@@ -8,7 +8,7 @@ import (
 	"github.com/sergdort/Social/business/platform/jwt"
 	"github.com/sergdort/Social/business/platform/mailer"
 	"github.com/sergdort/Social/business/platform/store"
-	cache2 "github.com/sergdort/Social/business/platform/store/cache"
+	"github.com/sergdort/Social/business/platform/store/cache"
 	"github.com/sergdort/Social/cmd/api/debug"
 	"github.com/sergdort/Social/foundation/logger"
 	"github.com/sergdort/Social/foundation/otel"
@@ -119,10 +119,10 @@ func main() {
 	)
 	var rdb *redis.Client
 	if cfg.redisCfg.enabled {
-		rdb = cache2.NewRedisClient(cfg.redisCfg.addr, cfg.redisCfg.pw, cfg.redisCfg.db)
-		log.Info(ctx, "Redis connected")
+		rdb = cache.NewRedisClient(cfg.redisCfg.addr, cfg.redisCfg.pw, cfg.redisCfg.db)
+		log.Info(ctx, "Redis connected", "addr", cfg.redisCfg.addr)
 	}
-	cacheStorage := cache2.NewStorage(rdb)
+	cacheStorage := cache.NewStorage(rdb)
 
 	s := store.NewStorage(database)
 
@@ -174,8 +174,8 @@ func main() {
 		}
 	}()
 
-	serverErrors := make(chan error, 1)
 	server := app.makeServer(app.mount(ctx, log))
+	serverErrors := make(chan error, 1)
 
 	shutdown := make(chan os.Signal, 1)
 	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)
