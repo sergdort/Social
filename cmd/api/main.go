@@ -12,7 +12,6 @@ import (
 	"github.com/sergdort/Social/cmd/api/debug"
 	"github.com/sergdort/Social/foundation/logger"
 	"github.com/sergdort/Social/foundation/otel"
-	"github.com/sergdort/Social/internal/auth"
 	"github.com/sergdort/Social/internal/db"
 	"github.com/sergdort/Social/internal/env"
 	"net/http"
@@ -126,12 +125,6 @@ func main() {
 
 	s := store.NewStorage(database)
 
-	var authenticator = auth.NewJWTAutheticator(
-		cfg.auth.jwt.secret,
-		cfg.auth.jwt.tokenHost,
-		cfg.auth.jwt.tokenHost,
-	)
-
 	jwtAuth := jwt.NewJWTAutheticator(
 		cfg.auth.jwt.secret,
 		cfg.auth.jwt.tokenHost,
@@ -141,12 +134,11 @@ func main() {
 	)
 
 	var app = &application{
-		config:        cfg,
-		store:         s,
-		logger:        log,
-		mailer:        mail,
-		authenticator: authenticator,
-		cache:         cacheStorage,
+		config: cfg,
+		store:  s,
+		logger: log,
+		mailer: mail,
+		cache:  cacheStorage,
 		useCase: useCases{
 			Users: domain.NewUsersUseCase(cacheStorage.Users, s.Users, s.Follows),
 			Auth: domain.NewAuthUseCase(

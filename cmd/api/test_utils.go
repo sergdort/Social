@@ -8,7 +8,6 @@ import (
 	"github.com/sergdort/Social/business/platform/store/cache"
 	"github.com/sergdort/Social/foundation/logger"
 	"github.com/sergdort/Social/foundation/otel"
-	"github.com/sergdort/Social/internal/auth"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -29,9 +28,8 @@ func newTestApplication(t *testing.T, cfg config) *application {
 			Follows:  domain.NewMockFollowsRepository(t),
 			Roles:    domain.NewMockRolesRepository(t),
 		},
-		logger:        logger.New(os.Stdout, logger.LevelDebug, "SOCIAL_TESTS", traceIDFn),
-		mailer:        nil,
-		authenticator: auth.NewMockAuthenticator(t),
+		logger: logger.New(os.Stdout, logger.LevelDebug, "SOCIAL_TESTS", traceIDFn),
+		mailer: nil,
 		cache: cache.Storage{
 			Users: domain.NewMockUsersCache(t),
 		},

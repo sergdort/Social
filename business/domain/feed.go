@@ -9,3 +9,6 @@ type PaginatedFeedQuery struct {
 	Since  string   `json:"since"`
 	Until  string   `json:"until"`
 }
+
+type FeedUseCase struct {
+}

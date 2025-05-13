@@ -14,7 +14,6 @@ import (
 	"github.com/sergdort/Social/foundation/logger"
 	"github.com/sergdort/Social/foundation/otel"
 	"github.com/sergdort/Social/foundation/web"
-	"github.com/sergdort/Social/internal/auth"
 	"net/http"
 	"time"
 )
@@ -27,13 +26,12 @@ type dbConfig struct {
 }
 
 type application struct {
-	config        config
-	store         s.Storage
-	logger        *logger.Logger
-	mailer        mailer.Mailer
-	authenticator auth.Authenticator
-	cache         cache.Storage
-	useCase       useCases
+	config  config
+	store   s.Storage
+	logger  *logger.Logger
+	mailer  mailer.Mailer
+	cache   cache.Storage
+	useCase useCases
 }
 
 type useCases struct {
