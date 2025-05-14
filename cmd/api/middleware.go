@@ -11,7 +11,7 @@ import (
 
 type authUserKey string
 
-const authUserCtx userKey = "authUser"
+const authUserCtx authUserKey = "authUser"
 
 func (app *application) BasicAuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

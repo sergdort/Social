@@ -5,15 +5,15 @@ import (
 	"expvar"
 	"github.com/redis/go-redis/v9"
 	"github.com/sergdort/Social/business/domain"
+	"github.com/sergdort/Social/business/platform/db"
 	"github.com/sergdort/Social/business/platform/jwt"
 	"github.com/sergdort/Social/business/platform/mailer"
 	"github.com/sergdort/Social/business/platform/store"
 	"github.com/sergdort/Social/business/platform/store/cache"
 	"github.com/sergdort/Social/cmd/api/debug"
+	"github.com/sergdort/Social/foundation/env"
 	"github.com/sergdort/Social/foundation/logger"
 	"github.com/sergdort/Social/foundation/otel"
-	"github.com/sergdort/Social/internal/db"
-	"github.com/sergdort/Social/internal/env"
 	"net/http"
 	"os"
 	"os/signal"
@@ -94,7 +94,7 @@ func main() {
 	mail := mailer.NewSendgridMailer(cfg.mail.fromEmail, cfg.mail.sendGridConfig.apiKey)
 
 	// Database
-	var database, err = db.New(
+	database, err := db.New(
 		cfg.db.addr,
 		cfg.db.maxOpenConns,
 		cfg.db.maxIdleConns,
@@ -151,6 +151,7 @@ func main() {
 				jwtAuth,
 				jwtAuth,
 			),
+			Feed: s.Posts,
 		},
 	}
 	// TODO: Pass build type

@@ -98,7 +98,10 @@ func (e *Error) Error() string {
 
 // Encode implements the encoder interface.
 func (e *Error) Encode() ([]byte, string, error) {
-	data, err := json.Marshal(e)
+	type envelope struct {
+		Error *Error `json:"error"`
+	}
+	data, err := json.Marshal(envelope{Error: e})
 	return data, "application/json", err
 }
 

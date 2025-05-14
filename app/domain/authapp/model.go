@@ -3,7 +3,7 @@ package authapp
 import "encoding/json"
 
 type TokenResponse struct {
-	Token string `json:"token"`
+	Token string `json:"token" binding:"required" example:"JWT_TOKEN"`
 }
 
 func (token TokenResponse) Encode() (data []byte, contentType string, err error) {

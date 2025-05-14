@@ -35,8 +35,9 @@ type App struct {
 	origins []string
 }
 
-func NewApp(mw ...MidFunc) *App {
+func NewApp(docsSetup func(mux *http.ServeMux), mw ...MidFunc) *App {
 	mux := http.NewServeMux()
+	docsSetup(mux)
 	app := &App{
 		mux:   mux,
 		mw:    mw,
@@ -145,4 +146,14 @@ func (a *App) HandlerFuncNoMid(method string, group string, path string, handler
 	finalPath = fmt.Sprintf("%s %s", method, finalPath)
 
 	a.mux.HandleFunc(finalPath, h)
+}
+
+func (a *App) AddHocHandler(method string, group string, path string, handlerFunc http.HandlerFunc) {
+	finalPath := path
+	if group != "" {
+		finalPath = "/" + group + path
+	}
+	finalPath = fmt.Sprintf("%s %s", method, finalPath)
+
+	a.mux.HandleFunc(finalPath, handlerFunc)
 }

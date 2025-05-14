@@ -2,7 +2,6 @@ package main
 
 import (
 	"github.com/sergdort/Social/business/domain"
-	"github.com/sergdort/Social/internal/auth"
 	"github.com/stretchr/testify/mock"
 	"net/http"
 	"testing"

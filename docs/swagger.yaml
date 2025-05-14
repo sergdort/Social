@@ -1,66 +1,14 @@
 basePath: /v1
 definitions:
-  main.CreatePostPayload:
-    properties:
-      content:
-        maxLength: 1000
-        type: string
-      tags:
-        items:
-          type: string
-        type: array
-      title:
-        maxLength: 100
-        type: string
-    required:
-    - content
-    - title
-    type: object
-  main.CreateUserTokenPayload:
-    properties:
-      email:
-        maxLength: 255
-        type: string
-      password:
-        maxLength: 72
-        minLength: 3
-        type: string
-    required:
-    - email
-    - password
-    type: object
-  main.InvitationTokenResponse:
+  authapp.TokenResponse:
     properties:
       token:
-        type: string
-    type: object
-  main.RegisterUserPayload:
-    properties:
-      email:
-        maxLength: 255
-        type: string
-      password:
-        maxLength: 72
-        minLength: 3
-        type: string
-      user_name:
-        maxLength: 100
+        example: JWT_TOKEN
         type: string
     required:
-    - email
-    - password
-    - user_name
+    - token
     type: object
-  main.UpdatePostPayload:
-    properties:
-      content:
-        maxLength: 1000
-        type: string
-      title:
-        maxLength: 100
-        type: string
-    type: object
-  store.Comment:
+  domain.Comment:
     properties:
       content:
         type: string
@@ -71,15 +19,28 @@ definitions:
       post_id:
         type: integer
       user:
-        $ref: '#/definitions/store.User'
+        $ref: '#/definitions/domain.User'
       user_id:
         type: integer
     type: object
-  store.Post:
+  domain.CreateUserTokenPayload:
+    properties:
+      email:
+        maxLength: 255
+        type: string
+      password:
+        maxLength: 72
+        minLength: 3
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  domain.Post:
     properties:
       comments:
         items:
-          $ref: '#/definitions/store.Comment'
+          $ref: '#/definitions/domain.Comment'
         type: array
       content:
         type: string
@@ -96,17 +57,17 @@ definitions:
       updated_at:
         type: string
       user:
-        $ref: '#/definitions/store.User'
+        $ref: '#/definitions/domain.User'
       user_id:
         type: integer
       version:
         type: integer
     type: object
-  store.PostWithMetadata:
+  domain.PostWithMetadata:
     properties:
       comments:
         items:
-          $ref: '#/definitions/store.Comment'
+          $ref: '#/definitions/domain.Comment'
         type: array
       comments_count:
         type: integer
@@ -125,13 +86,13 @@ definitions:
       updated_at:
         type: string
       user:
-        $ref: '#/definitions/store.User'
+        $ref: '#/definitions/domain.User'
       user_id:
         type: integer
       version:
         type: integer
     type: object
-  store.Role:
+  domain.Role:
     properties:
       description:
         type: string
@@ -142,7 +103,7 @@ definitions:
       name:
         type: string
     type: object
-  store.User:
+  domain.User:
     properties:
       created_at:
         type: string
@@ -153,9 +114,49 @@ definitions:
       is_active:
         type: boolean
       role:
-        $ref: '#/definitions/store.Role'
+        $ref: '#/definitions/domain.Role'
       role_id:
         type: integer
+      username:
+        type: string
+    type: object
+  main.CreatePostPayload:
+    properties:
+      content:
+        maxLength: 1000
+        type: string
+      tags:
+        items:
+          type: string
+        type: array
+      title:
+        maxLength: 100
+        type: string
+    required:
+    - content
+    - title
+    type: object
+  main.UpdatePostPayload:
+    properties:
+      content:
+        maxLength: 1000
+        type: string
+      title:
+        maxLength: 100
+        type: string
+    type: object
+  usersapp.User:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: integer
+      is_active:
+        type: boolean
+      role:
+        type: string
       username:
         type: string
     type: object
@@ -182,14 +183,14 @@ paths:
         name: payload
         required: true
         schema:
-          $ref: '#/definitions/main.CreateUserTokenPayload'
+          $ref: '#/definitions/domain.CreateUserTokenPayload'
       produces:
       - application/json
       responses:
         "200":
-          description: Token
+          description: OK
           schema:
-            type: string
+            $ref: '#/definitions/authapp.TokenResponse'
         "400":
           description: Bad Request
           schema: {}
@@ -200,34 +201,6 @@ paths:
           description: Internal Server Error
           schema: {}
       summary: Creates a token
-      tags:
-      - authentication
-  /authentication/user:
-    post:
-      consumes:
-      - application/json
-      description: Registers a user
-      parameters:
-      - description: User credentials
-        in: body
-        name: payload
-        required: true
-        schema:
-          $ref: '#/definitions/main.RegisterUserPayload'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: User registered
-          schema:
-            $ref: '#/definitions/main.InvitationTokenResponse'
-        "400":
-          description: Bad Request
-          schema: {}
-        "500":
-          description: Internal Server Error
-          schema: {}
-      summary: Registers a user
       tags:
       - authentication
   /health:
@@ -261,7 +234,7 @@ paths:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/store.Post'
+            $ref: '#/definitions/domain.Post'
         "400":
           description: Bad Request
           schema: {}
@@ -321,7 +294,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/store.Post'
+            $ref: '#/definitions/domain.Post'
         "404":
           description: Not Found
           schema: {}
@@ -355,7 +328,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/store.Post'
+            $ref: '#/definitions/domain.Post'
         "400":
           description: Bad Request
           schema: {}
@@ -390,7 +363,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/store.User'
+            $ref: '#/definitions/usersapp.User'
         "204":
           description: No Content
           schema: {}
@@ -434,62 +407,6 @@ paths:
       summary: Follows a user
       tags:
       - users
-  /users/{id}/unfollow:
-    put:
-      consumes:
-      - application/json
-      description: Unfollows a user
-      parameters:
-      - description: User ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "204":
-          description: No Content
-          schema:
-            type: string
-        "404":
-          description: Not Found
-          schema: {}
-        "500":
-          description: Internal Server Error
-          schema: {}
-      security:
-      - ApiKeyAuth: []
-      summary: Unfollows a user
-      tags:
-      - users
-  /users/activate/{token}:
-    put:
-      description: Activates/Register a user by invitation token
-      parameters:
-      - description: Invitation token
-        in: path
-        name: token
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "204":
-          description: User activated
-          schema:
-            type: string
-        "404":
-          description: Not Found
-          schema: {}
-        "500":
-          description: Internal Server Error
-          schema: {}
-      security:
-      - ApiKeyAuth: []
-      summary: Activates/Register a user
-      tags:
-      - users
   /users/feed:
     get:
       consumes:
@@ -531,7 +448,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/store.PostWithMetadata'
+              $ref: '#/definitions/domain.PostWithMetadata'
             type: array
         "400":
           description: Bad Request

@@ -21,4 +21,5 @@ func Routes(app *web.App, config Config) {
 
 	app.HandlerFunc(http.MethodGet, version, "/users/{userID}", api.getUserHandler, auth, userContext)
 	app.HandlerFunc(http.MethodPut, version, "/users/{userID}/follow", api.followUserHandler, auth, userContext)
+	app.HandlerFunc(http.MethodPut, version, "/users/{userID}/unfollow", api.unfollowUserHandler, auth, userContext)
 }

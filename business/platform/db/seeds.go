@@ -51,7 +51,7 @@ func generateComments(count int, posts []*domain.Post, users []*domain.User) []*
 	var comments []*domain.Comment
 
 	for _, post := range posts {
-		postComments := getRandomComments(count) // Generate random comments for the post
+		postComments := getRandomComments(count) // generate random comments for the post
 		for _, postComment := range postComments {
 			comments = append(comments, &domain.Comment{
 				PostID:  post.ID,

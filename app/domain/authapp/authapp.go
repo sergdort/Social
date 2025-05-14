@@ -37,8 +37,8 @@ func (app *authApp) registerUserHandler(ctx context.Context, r *http.Request) we
 //	@Tags			authentication
 //	@Accept			json
 //	@Produce		json
-//	@Param			payload	body		CreateUserTokenPayload	true	"User credentials"
-//	@Success		200		{string}	string					"Token"
+//	@Param			payload	body		domain.CreateUserTokenPayload	true	"User credentials"
+//	@Success		200		{object}	TokenResponse
 //	@Failure		400		{object}	error
 //	@Failure		401		{object}	error
 //	@Failure		500		{object}	error

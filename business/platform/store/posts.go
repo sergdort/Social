@@ -5,15 +5,15 @@ import (
 	"database/sql"
 	"errors"
 	"github.com/sergdort/Social/business/domain"
-	sqlc2 "github.com/sergdort/Social/business/platform/store/sqlc"
+	"github.com/sergdort/Social/business/platform/store/sqlc"
 )
 
 type PostStore struct {
-	queries *sqlc2.Queries
+	queries *sqlc.Queries
 }
 
 func (s *PostStore) Create(ctx context.Context, post *domain.Post) error {
-	row, err := s.queries.CreatePost(ctx, sqlc2.CreatePostParams{
+	row, err := s.queries.CreatePost(ctx, sqlc.CreatePostParams{
 		Content: post.Content,
 		Title:   post.Title,
 		UserID:  post.UserID,
@@ -81,7 +81,7 @@ func (s *PostStore) Update(ctx context.Context, post *domain.Post) error {
 
 	defer cancel()
 
-	version, err := s.queries.UpdatePost(ctx, sqlc2.UpdatePostParams{
+	version, err := s.queries.UpdatePost(ctx, sqlc.UpdatePostParams{
 		Content: post.Content,
 		Title:   post.Title,
 		ID:      post.ID,
@@ -106,7 +106,7 @@ func (s *PostStore) Update(ctx context.Context, post *domain.Post) error {
 }
 
 func (s *PostStore) GetUserFeed(ctx context.Context, userId int64, q domain.PaginatedFeedQuery) ([]domain.PostWithMetadata, error) {
-	feed, err := s.queries.GetUserFeed(ctx, sqlc2.GetUserFeedParams{
+	feed, err := s.queries.GetUserFeed(ctx, sqlc.GetUserFeedParams{
 		UserID:  userId,
 		Limit:   int32(q.Limit),
 		Offset:  int32(q.Offset),
@@ -120,7 +120,7 @@ func (s *PostStore) GetUserFeed(ctx context.Context, userId int64, q domain.Pagi
 	return postsWithMetadata, nil
 }
 
-func convertToPostWithMetadata(feedRow sqlc2.GetUserFeedRow) domain.PostWithMetadata {
+func convertToPostWithMetadata(feedRow sqlc.GetUserFeedRow) domain.PostWithMetadata {
 	return domain.PostWithMetadata{
 		Post: domain.Post{
 			ID:        feedRow.ID,

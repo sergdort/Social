@@ -40,11 +40,11 @@ func (auth *JWTAutheticator) GenerateToken(ctx context.Context, userID int64) (s
 		"aud": auth.tokenHost,
 	}
 
-	return auth.Generate(claims)
+	return auth.generate(claims)
 }
 
 func (auth *JWTAutheticator) ValidateToken(ctx context.Context, token string) (domain.Claims, error) {
-	jwtToken, err := auth.Validate(token)
+	jwtToken, err := auth.validate(token)
 	if err != nil {
 		return domain.Claims{}, err
 	}
@@ -56,7 +56,7 @@ func (auth *JWTAutheticator) ValidateToken(ctx context.Context, token string) (d
 	return domain.Claims{userID}, nil
 }
 
-func (auth *JWTAutheticator) Generate(claims jwt.Claims) (string, error) {
+func (auth *JWTAutheticator) generate(claims jwt.Claims) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
 	tokenString, err := token.SignedString([]byte(auth.secretKey))
@@ -66,7 +66,7 @@ func (auth *JWTAutheticator) Generate(claims jwt.Claims) (string, error) {
 	return tokenString, nil
 }
 
-func (auth *JWTAutheticator) Validate(token string) (*jwt.Token, error) {
+func (auth *JWTAutheticator) validate(token string) (*jwt.Token, error) {
 	return jwt.Parse(token, func(t *jwt.Token) (any, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method %v", t.Header["alg"])

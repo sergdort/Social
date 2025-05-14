@@ -33,7 +33,7 @@ type UpdatePostPayload struct {
 //	@Accept			json
 //	@Produce		json
 //	@Param			payload	body		CreatePostPayload	true	"Post Payload"
-//	@Success		201		{object}	store.Post
+//	@Success		201		{object}	domain.Post
 //	@Failure		400		{object}	error
 //	@Failure		401		{object}	error
 //	@Failure		500		{object}	error
@@ -80,7 +80,7 @@ func (app *application) createPostsHandler(w http.ResponseWriter, r *http.Reques
 //	@Accept			json
 //	@Produce		json
 //	@Param			id	path		int	true	"Post ID"
-//	@Success		200	{object}	store.Post
+//	@Success		200	{object}	domain.Post
 //	@Failure		404	{object}	error
 //	@Failure		500	{object}	error
 //	@Security		ApiKeyAuth
@@ -145,7 +145,7 @@ func (app *application) deletePostHandler(w http.ResponseWriter, r *http.Request
 //	@Produce		json
 //	@Param			id		path		int					true	"Post ID"
 //	@Param			payload	body		UpdatePostPayload	true	"Post payload"
-//	@Success		200		{object}	store.Post
+//	@Success		200		{object}	domain.Post
 //	@Failure		400		{object}	error
 //	@Failure		401		{object}	error
 //	@Failure		404		{object}	error

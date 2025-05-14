@@ -1,5 +1,7 @@
 package domain
 
+import "context"
+
 type PaginatedFeedQuery struct {
 	Limit  int      `json:"limit" validate:"gte=1,lte=50"`
 	Offset int      `json:"offset" validate:"gte=0"`
@@ -10,5 +12,6 @@ type PaginatedFeedQuery struct {
 	Until  string   `json:"until"`
 }
 
-type FeedUseCase struct {
+type FeedUseCase interface {
+	GetUserFeed(ctx context.Context, userId int64, query PaginatedFeedQuery) ([]PostWithMetadata, error)
 }

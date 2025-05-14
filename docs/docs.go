@@ -44,15 +44,15 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/main.CreateUserTokenPayload"
+                            "$ref": "#/definitions/domain.CreateUserTokenPayload"
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Token",
+                        "description": "OK",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/authapp.TokenResponse"
                         }
                     },
                     "400": {
@@ -61,48 +61,6 @@ const docTemplate = `{
                     },
                     "401": {
                         "description": "Unauthorized",
-                        "schema": {}
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {}
-                    }
-                }
-            }
-        },
-        "/authentication/user": {
-            "post": {
-                "description": "Registers a user",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "authentication"
-                ],
-                "summary": "Registers a user",
-                "parameters": [
-                    {
-                        "description": "User credentials",
-                        "name": "payload",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/main.RegisterUserPayload"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "User registered",
-                        "schema": {
-                            "$ref": "#/definitions/main.InvitationTokenResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
                         "schema": {}
                     },
                     "500": {
@@ -165,7 +123,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/store.Post"
+                            "$ref": "#/definitions/domain.Post"
                         }
                     },
                     "400": {
@@ -214,7 +172,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/store.Post"
+                            "$ref": "#/definitions/domain.Post"
                         }
                     },
                     "404": {
@@ -309,7 +267,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/store.Post"
+                            "$ref": "#/definitions/domain.Post"
                         }
                     },
                     "400": {
@@ -319,48 +277,6 @@ const docTemplate = `{
                     "401": {
                         "description": "Unauthorized",
                         "schema": {}
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {}
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {}
-                    }
-                }
-            }
-        },
-        "/users/activate/{token}": {
-            "put": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "Activates/Register a user by invitation token",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "users"
-                ],
-                "summary": "Activates/Register a user",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Invitation token",
-                        "name": "token",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "204": {
-                        "description": "User activated",
-                        "schema": {
-                            "type": "string"
-                        }
                     },
                     "404": {
                         "description": "Not Found",
@@ -441,7 +357,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/store.PostWithMetadata"
+                                "$ref": "#/definitions/domain.PostWithMetadata"
                             }
                         }
                     },
@@ -487,7 +403,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/store.User"
+                            "$ref": "#/definitions/usersapp.User"
                         }
                     },
                     "204": {
@@ -549,78 +465,45 @@ const docTemplate = `{
                     }
                 }
             }
-        },
-        "/users/{id}/unfollow": {
-            "put": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "Unfollows a user",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "users"
-                ],
-                "summary": "Unfollows a user",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "User ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "204": {
-                        "description": "No Content",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {}
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {}
-                    }
-                }
-            }
         }
     },
     "definitions": {
-        "main.CreatePostPayload": {
+        "authapp.TokenResponse": {
             "type": "object",
             "required": [
-                "content",
-                "title"
+                "token"
             ],
             "properties": {
-                "content": {
+                "token": {
                     "type": "string",
-                    "maxLength": 1000
-                },
-                "tags": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "title": {
-                    "type": "string",
-                    "maxLength": 100
+                    "example": "JWT_TOKEN"
                 }
             }
         },
-        "main.CreateUserTokenPayload": {
+        "domain.Comment": {
+            "type": "object",
+            "properties": {
+                "content": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "post_id": {
+                    "type": "integer"
+                },
+                "user": {
+                    "$ref": "#/definitions/domain.User"
+                },
+                "user_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "domain.CreateUserTokenPayload": {
             "type": "object",
             "required": [
                 "email",
@@ -638,80 +521,13 @@ const docTemplate = `{
                 }
             }
         },
-        "main.InvitationTokenResponse": {
-            "type": "object",
-            "properties": {
-                "token": {
-                    "type": "string"
-                }
-            }
-        },
-        "main.RegisterUserPayload": {
-            "type": "object",
-            "required": [
-                "email",
-                "password",
-                "user_name"
-            ],
-            "properties": {
-                "email": {
-                    "type": "string",
-                    "maxLength": 255
-                },
-                "password": {
-                    "type": "string",
-                    "maxLength": 72,
-                    "minLength": 3
-                },
-                "user_name": {
-                    "type": "string",
-                    "maxLength": 100
-                }
-            }
-        },
-        "main.UpdatePostPayload": {
-            "type": "object",
-            "properties": {
-                "content": {
-                    "type": "string",
-                    "maxLength": 1000
-                },
-                "title": {
-                    "type": "string",
-                    "maxLength": 100
-                }
-            }
-        },
-        "store.Comment": {
-            "type": "object",
-            "properties": {
-                "content": {
-                    "type": "string"
-                },
-                "created_at": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "post_id": {
-                    "type": "integer"
-                },
-                "user": {
-                    "$ref": "#/definitions/store.User"
-                },
-                "user_id": {
-                    "type": "integer"
-                }
-            }
-        },
-        "store.Post": {
+        "domain.Post": {
             "type": "object",
             "properties": {
                 "comments": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/store.Comment"
+                        "$ref": "#/definitions/domain.Comment"
                     }
                 },
                 "content": {
@@ -736,7 +552,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "user": {
-                    "$ref": "#/definitions/store.User"
+                    "$ref": "#/definitions/domain.User"
                 },
                 "user_id": {
                     "type": "integer"
@@ -746,13 +562,13 @@ const docTemplate = `{
                 }
             }
         },
-        "store.PostWithMetadata": {
+        "domain.PostWithMetadata": {
             "type": "object",
             "properties": {
                 "comments": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/store.Comment"
+                        "$ref": "#/definitions/domain.Comment"
                     }
                 },
                 "comments_count": {
@@ -780,7 +596,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "user": {
-                    "$ref": "#/definitions/store.User"
+                    "$ref": "#/definitions/domain.User"
                 },
                 "user_id": {
                     "type": "integer"
@@ -790,7 +606,7 @@ const docTemplate = `{
                 }
             }
         },
-        "store.Role": {
+        "domain.Role": {
             "type": "object",
             "properties": {
                 "description": {
@@ -807,7 +623,7 @@ const docTemplate = `{
                 }
             }
         },
-        "store.User": {
+        "domain.User": {
             "type": "object",
             "properties": {
                 "created_at": {
@@ -823,10 +639,69 @@ const docTemplate = `{
                     "type": "boolean"
                 },
                 "role": {
-                    "$ref": "#/definitions/store.Role"
+                    "$ref": "#/definitions/domain.Role"
                 },
                 "role_id": {
                     "type": "integer"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "main.CreatePostPayload": {
+            "type": "object",
+            "required": [
+                "content",
+                "title"
+            ],
+            "properties": {
+                "content": {
+                    "type": "string",
+                    "maxLength": 1000
+                },
+                "tags": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "title": {
+                    "type": "string",
+                    "maxLength": 100
+                }
+            }
+        },
+        "main.UpdatePostPayload": {
+            "type": "object",
+            "properties": {
+                "content": {
+                    "type": "string",
+                    "maxLength": 1000
+                },
+                "title": {
+                    "type": "string",
+                    "maxLength": 100
+                }
+            }
+        },
+        "usersapp.User": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "is_active": {
+                    "type": "boolean"
+                },
+                "role": {
+                    "type": "string"
                 },
                 "username": {
                     "type": "string"

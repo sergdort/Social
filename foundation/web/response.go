@@ -2,6 +2,7 @@ package web
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -16,6 +17,15 @@ func NewNoResponse() NoResponse {
 // Encode implements the Encoder interface.
 func (NoResponse) Encode() ([]byte, string, error) {
 	return nil, "", nil
+}
+
+type Response[T any] struct {
+	Data T `json:"data"`
+}
+
+func (r Response[T]) Encode() ([]byte, string, error) {
+	data, err := json.Marshal(r)
+	return data, "application/json", err
 }
 
 type httpStatus interface {

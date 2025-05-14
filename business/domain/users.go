@@ -3,8 +3,9 @@ package domain
 import (
 	"context"
 	"database/sql"
-	"golang.org/x/crypto/bcrypt"
 	"time"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 type User struct {
@@ -82,6 +83,10 @@ func (uc *UsersUseCase) FollowUser(ctx context.Context, userID int64, followerID
 
 func (uc *UsersUseCase) UnfollowUser(ctx context.Context, userID int64, followerID int64) error {
 	return uc.followsRepo.Unfollow(ctx, userID, followerID)
+}
+
+func (uc *UsersUseCase) ActivateUser(ctx context.Context, token string) error {
+	return uc.usersRepo.Activate(ctx, token)
 }
 
 type UsersCache interface {

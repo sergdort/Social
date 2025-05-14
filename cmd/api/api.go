@@ -2,8 +2,8 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"github.com/sergdort/Social/app/domain/authapp"
+	"github.com/sergdort/Social/app/domain/feedapp"
 	"github.com/sergdort/Social/app/domain/usersapp"
 	"github.com/sergdort/Social/app/shared/mid"
 	"github.com/sergdort/Social/business/domain"
@@ -14,6 +14,7 @@ import (
 	"github.com/sergdort/Social/foundation/logger"
 	"github.com/sergdort/Social/foundation/otel"
 	"github.com/sergdort/Social/foundation/web"
+	httpSwagger "github.com/swaggo/http-swagger"
 	"net/http"
 	"time"
 )
@@ -37,6 +38,7 @@ type application struct {
 type useCases struct {
 	Users *domain.UsersUseCase
 	Auth  *domain.AuthUseCase
+	Feed  domain.FeedUseCase
 }
 
 type redisConfig struct {
@@ -96,11 +98,15 @@ func (app *application) mount(ctx context.Context, log *logger.Logger) http.Hand
 		Probability: 0.05,
 	})
 	if err != nil {
-		fmt.Errorf("starting tracing: %w", err)
+		log.Error(ctx, "starting tracing: %s", err)
 		return nil
 	}
 	tracer := traceProvider.Tracer(app.config.serviceName)
-	webApp := web.NewApp(mid.Otel(tracer),
+	webApp := web.NewApp(
+		func(mux *http.ServeMux) {
+			mux.HandleFunc("GET /v1/swagger/", httpSwagger.Handler())
+		},
+		mid.Otel(tracer),
 		mid.Logger(log),
 		mid.Errors(log),
 		mid.Metrics(),
@@ -146,9 +152,9 @@ func (app *application) mount(ctx context.Context, log *logger.Logger) http.Hand
 	//	})
 	//})
 
-	usersapp.Routes(webApp, usersapp.Config{app.useCase.Auth, app.useCase.Users})
-	authapp.Routes(webApp, authapp.Config{app.useCase.Auth})
-
+	usersapp.Routes(webApp, usersapp.Config{Auth: app.useCase.Auth, UseCase: app.useCase.Users})
+	authapp.Routes(webApp, authapp.Config{UseCase: app.useCase.Auth})
+	feedapp.Routes(webApp, feedapp.Config{Auth: app.useCase.Auth, FeedUseCase: app.useCase.Feed})
 	defer teardown(ctx)
 
 	return webApp
