@@ -115,7 +115,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/main.CreatePostPayload"
+                            "$ref": "#/definitions/postsapp.CreatePostPayload"
                         }
                     }
                 ],
@@ -355,10 +355,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/domain.PostWithMetadata"
-                            }
+                            "$ref": "#/definitions/feedapp.FeedData"
                         }
                     },
                     "400": {
@@ -562,50 +559,6 @@ const docTemplate = `{
                 }
             }
         },
-        "domain.PostWithMetadata": {
-            "type": "object",
-            "properties": {
-                "comments": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/domain.Comment"
-                    }
-                },
-                "comments_count": {
-                    "type": "integer"
-                },
-                "content": {
-                    "type": "string"
-                },
-                "created_at": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "tags": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "title": {
-                    "type": "string"
-                },
-                "updated_at": {
-                    "type": "string"
-                },
-                "user": {
-                    "$ref": "#/definitions/domain.User"
-                },
-                "user_id": {
-                    "type": "integer"
-                },
-                "version": {
-                    "type": "integer"
-                }
-            }
-        },
         "domain.Role": {
             "type": "object",
             "properties": {
@@ -649,7 +602,92 @@ const docTemplate = `{
                 }
             }
         },
-        "main.CreatePostPayload": {
+        "feedapp.FeedData": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/feedapp.PostFeedItem"
+                    }
+                }
+            }
+        },
+        "feedapp.FeedUser": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer",
+                    "example": 38
+                },
+                "username": {
+                    "type": "string",
+                    "example": "GendryBaratheon"
+                }
+            }
+        },
+        "feedapp.PostFeedItem": {
+            "type": "object",
+            "properties": {
+                "comments_count": {
+                    "type": "integer",
+                    "example": 4
+                },
+                "content": {
+                    "type": "string",
+                    "example": "I will not become a queen of ashes."
+                },
+                "created_at": {
+                    "type": "string",
+                    "example": "2025-03-19 10:08:25 +0000 UTC"
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 117
+                },
+                "tags": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "Dothraki",
+                        "Lannister",
+                        "BattleOfBastards",
+                        "KingsLanding"
+                    ]
+                },
+                "title": {
+                    "type": "string",
+                    "example": "The King of Ashes"
+                },
+                "updated_at": {
+                    "type": "string",
+                    "example": "2025-03-19 10:08:25 +0000 UTC"
+                },
+                "user": {
+                    "$ref": "#/definitions/feedapp.FeedUser"
+                },
+                "user_id": {
+                    "type": "integer",
+                    "example": 38
+                }
+            }
+        },
+        "main.UpdatePostPayload": {
+            "type": "object",
+            "properties": {
+                "content": {
+                    "type": "string",
+                    "maxLength": 1000
+                },
+                "title": {
+                    "type": "string",
+                    "maxLength": 100
+                }
+            }
+        },
+        "postsapp.CreatePostPayload": {
             "type": "object",
             "required": [
                 "content",
@@ -665,19 +703,6 @@ const docTemplate = `{
                     "items": {
                         "type": "string"
                     }
-                },
-                "title": {
-                    "type": "string",
-                    "maxLength": 100
-                }
-            }
-        },
-        "main.UpdatePostPayload": {
-            "type": "object",
-            "properties": {
-                "content": {
-                    "type": "string",
-                    "maxLength": 1000
                 },
                 "title": {
                     "type": "string",

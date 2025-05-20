@@ -34,9 +34,9 @@ func (s *UserStore) Create(ctx context.Context, tx *sql.Tx, user *domain.User) e
 	if err != nil {
 		switch {
 		case err.Error() == `pq: duplicate key value violates unique constraint "users_email_key"`:
-			return ErrDuplicateEmail
+			return domain.ErrDuplicateEmail
 		case err.Error() == `pq: duplicate key value violates unique constraint "users_username_key"`:
-			return ErrDuplicateUsername
+			return domain.ErrDuplicateUsername
 		default:
 			return err
 		}
@@ -64,7 +64,7 @@ func (s *UserStore) GetByID(ctx context.Context, id int64) (*domain.User, error)
 	if err != nil {
 		switch {
 		case errors.Is(err, sql.ErrNoRows):
-			return nil, ErrNotFound
+			return nil, domain.ErrNotFound
 		default:
 			return nil, err
 		}
@@ -143,7 +143,7 @@ func (s *UserStore) activateUserByInvitationToken(ctx context.Context, token str
 	if err != nil {
 		switch {
 		case errors.Is(err, sql.ErrNoRows):
-			return ErrNotFound
+			return domain.ErrNotFound
 		default:
 			return err
 		}

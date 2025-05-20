@@ -5,7 +5,6 @@ import (
 	"errors"
 	"github.com/go-chi/chi/v5"
 	"github.com/sergdort/Social/business/domain"
-	"github.com/sergdort/Social/business/platform/store"
 	"net/http"
 	"strconv"
 )
@@ -23,53 +22,6 @@ type CreatePostPayload struct {
 type UpdatePostPayload struct {
 	Title   *string `json:"title" validate:"omitempty,max=100"`
 	Content *string `json:"content" validate:"omitempty,max=1000"`
-}
-
-// CreatePost godoc
-//
-//	@Summary		Creates a post
-//	@Description	Creates a post
-//	@Tags			posts
-//	@Accept			json
-//	@Produce		json
-//	@Param			payload	body		CreatePostPayload	true	"Post Payload"
-//	@Success		201		{object}	domain.Post
-//	@Failure		400		{object}	error
-//	@Failure		401		{object}	error
-//	@Failure		500		{object}	error
-//	@Security		ApiKeyAuth
-//	@Router			/posts/ [post]
-func (app *application) createPostsHandler(w http.ResponseWriter, r *http.Request) {
-	var ctx = r.Context()
-	var payload CreatePostPayload
-
-	if err := readJSON(w, r, &payload); err != nil {
-		app.badRequestResponse(w, r, err)
-		return
-	}
-
-	if err := Validate.Struct(payload); err != nil {
-		app.badRequestResponse(w, r, err)
-		return
-	}
-
-	user := getAuthUserFromContext(r)
-
-	var post = &domain.Post{
-		Title:   payload.Title,
-		Content: payload.Content,
-		Tags:    payload.Tags,
-		UserID:  user.ID,
-	}
-
-	if err := app.store.Posts.Create(ctx, post); err != nil {
-		app.internalServerError(w, r, err)
-		return
-	}
-
-	if err := app.jsonResponse(w, http.StatusCreated, post); err != nil {
-		app.internalServerError(w, r, err)
-	}
 }
 
 // GetPost godoc
@@ -125,7 +77,7 @@ func (app *application) deletePostHandler(w http.ResponseWriter, r *http.Request
 	err = app.store.Posts.Delete(ctx, postID)
 	if err != nil {
 		switch {
-		case errors.Is(err, store.ErrNotFound):
+		case errors.Is(err, domain.ErrNotFound):
 			app.notFoundResponse(w, r, err)
 		default:
 			app.internalServerError(w, r, err)
@@ -170,7 +122,7 @@ func (app *application) patchPostsHandler(w http.ResponseWriter, r *http.Request
 	err := app.store.Posts.Update(r.Context(), post)
 	if err != nil {
 		switch {
-		case errors.Is(err, store.ErrNotFound):
+		case errors.Is(err, domain.ErrNotFound):
 			app.notFoundResponse(w, r, err)
 		default:
 			app.internalServerError(w, r, err)
@@ -193,7 +145,7 @@ func (app *application) postsContextMiddleware(next http.Handler) http.Handler {
 
 		if err2 != nil {
 			switch {
-			case errors.Is(err2, store.ErrNotFound):
+			case errors.Is(err2, domain.ErrNotFound):
 				app.notFoundResponse(w, r, err2)
 			default:
 				app.internalServerError(w, r, err2)

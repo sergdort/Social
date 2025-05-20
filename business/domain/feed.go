@@ -12,6 +12,6 @@ type PaginatedFeedQuery struct {
 	Until  string   `json:"until"`
 }
 
-type FeedUseCase interface {
+type FeedRepository interface {
 	GetUserFeed(ctx context.Context, userId int64, query PaginatedFeedQuery) ([]PostWithMetadata, error)
 }

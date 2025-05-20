@@ -2,6 +2,7 @@ package usersapp
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"strconv"
 
@@ -48,7 +49,10 @@ func newApp(usersUseCase *domain.UsersUseCase) *userApp {
 //	@Security		ApiKeyAuth
 //	@Router			/users/{id} [get]
 func (app *userApp) getUserHandler(ctx context.Context, r *http.Request) web.Encoder {
-	user := getUserFromContext(ctx)
+	user, err := getUserFromContext(ctx)
+	if err != nil {
+		return errs.New(errs.Internal, err)
+	}
 
 	return web.Response[User]{Data: toAppUser(user)}
 }
@@ -67,11 +71,16 @@ func (app *userApp) getUserHandler(ctx context.Context, r *http.Request) web.Enc
 //	@Security		ApiKeyAuth
 //	@Router			/users/{id}/follow [put]
 func (app *userApp) followUserHandler(ctx context.Context, r *http.Request) web.Encoder {
-	currentUserID, err := mid.GetUserID(ctx)
-	userToFollow := getUserFromContext(ctx)
+	currentUserID, err := mid.GetAuthUserID(ctx)
 
 	if err != nil {
-		return errs.Newf(errs.Internal, "failed to get user from mid: %s", err)
+		return errs.New(errs.Internal, err)
+	}
+
+	userToFollow, err := getUserFromContext(ctx)
+
+	if err != nil {
+		return errs.New(errs.Internal, err)
 	}
 
 	err = app.usersUseCase.FollowUser(ctx, currentUserID, userToFollow.ID)
@@ -83,16 +92,21 @@ func (app *userApp) followUserHandler(ctx context.Context, r *http.Request) web.
 }
 
 func (app *userApp) unfollowUserHandler(ctx context.Context, r *http.Request) web.Encoder {
-	currentUserID, err := mid.GetUserID(ctx)
-	userToUnfollow := getUserFromContext(ctx)
-
+	currentUserID, err := mid.GetAuthUserID(ctx)
 	if err != nil {
-		return errs.Newf(errs.Internal, "failed to get user from mid: %s", err)
+		return errs.New(errs.Internal, err)
 	}
+
+	userToUnfollow, err := getUserFromContext(ctx)
+	if err != nil {
+		return errs.New(errs.Internal, err)
+	}
+
 	err = app.usersUseCase.UnfollowUser(ctx, currentUserID, userToUnfollow.ID)
 	if err != nil {
 		return errs.New(errs.Internal, err)
 	}
+
 	return web.NewNoResponse()
 }
 
@@ -128,9 +142,12 @@ func getAuthUserFromContext(r *http.Request) *domain.User {
 	return r.Context().Value(authUserCtx).(*domain.User)
 }
 
-func getUserFromContext(context context.Context) *domain.User {
-	user, _ := context.Value(userCtx).(*domain.User)
-	return user
+func getUserFromContext(context context.Context) (*domain.User, error) {
+	user, ok := context.Value(userCtx).(*domain.User)
+	if !ok {
+		return nil, errors.New("user not found in context")
+	}
+	return user, nil
 }
 
 func getUserId(r *http.Request) (int64, error) {

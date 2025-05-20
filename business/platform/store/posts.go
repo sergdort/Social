@@ -40,7 +40,7 @@ func (s *PostStore) GetByID(ctx context.Context, id int64) (*domain.Post, error)
 	if err != nil {
 		switch {
 		case errors.Is(err, sql.ErrNoRows):
-			return nil, ErrNotFound
+			return nil, domain.ErrNotFound
 		default:
 			return nil, err
 		}
@@ -71,7 +71,7 @@ func (s *PostStore) Delete(ctx context.Context, id int64) error {
 		return err
 	}
 	if rows == 0 {
-		return ErrNotFound
+		return domain.ErrNotFound
 	}
 	return nil
 }
@@ -94,7 +94,7 @@ func (s *PostStore) Update(ctx context.Context, post *domain.Post) error {
 	if err != nil {
 		switch {
 		case errors.Is(err, sql.ErrNoRows):
-			return ErrNotFound
+			return domain.ErrNotFound
 		default:
 			return err
 		}
@@ -103,21 +103,6 @@ func (s *PostStore) Update(ctx context.Context, post *domain.Post) error {
 	post.Version = int64(version.Int32)
 
 	return nil
-}
-
-func (s *PostStore) GetUserFeed(ctx context.Context, userId int64, q domain.PaginatedFeedQuery) ([]domain.PostWithMetadata, error) {
-	feed, err := s.queries.GetUserFeed(ctx, sqlc.GetUserFeedParams{
-		UserID:  userId,
-		Limit:   int32(q.Limit),
-		Offset:  int32(q.Offset),
-		Column4: q.Search,
-		Tags:    q.Tags,
-	})
-	if err != nil {
-		return nil, err
-	}
-	postsWithMetadata := Map(feed, convertToPostWithMetadata)
-	return postsWithMetadata, nil
 }
 
 func convertToPostWithMetadata(feedRow sqlc.GetUserFeedRow) domain.PostWithMetadata {
@@ -136,12 +121,4 @@ func convertToPostWithMetadata(feedRow sqlc.GetUserFeedRow) domain.PostWithMetad
 		},
 		CommentsCount: feedRow.CommentsCount,
 	}
-}
-
-func Map[T any, U any](input []T, mapper func(T) U) []U {
-	result := make([]U, len(input))
-	for i, v := range input {
-		result[i] = mapper(v)
-	}
-	return result
 }

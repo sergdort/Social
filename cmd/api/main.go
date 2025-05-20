@@ -151,7 +151,8 @@ func main() {
 				jwtAuth,
 				jwtAuth,
 			),
-			Feed: s.Posts,
+			Feed:  s.Feed,
+			Posts: s.Posts,
 		},
 	}
 	// TODO: Pass build type

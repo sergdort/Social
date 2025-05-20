@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"github.com/sergdort/Social/business/domain"
 	sqlc2 "github.com/sergdort/Social/business/platform/store/sqlc"
+	"github.com/sergdort/Social/foundation/slices"
 )
 
 type CommentStore struct {
@@ -46,7 +47,7 @@ func (s *CommentStore) GetAllByPostID(ctx context.Context, postID int64) ([]doma
 		return nil, err
 	}
 
-	comments := Map(rows, convertToComment)
+	comments := slices.Map(rows, convertToComment)
 
 	return comments, nil
 }

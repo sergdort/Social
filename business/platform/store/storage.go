@@ -3,15 +3,10 @@ package store
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"github.com/sergdort/Social/business/domain"
 	"github.com/sergdort/Social/business/platform/store/sqlc"
 	"time"
 )
-
-var ErrNotFound = errors.New("record not found")
-var ErrDuplicateEmail = errors.New("email already exists")
-var ErrDuplicateUsername = errors.New("username already exists")
 
 const QueryTimeoutDuration = 5 * time.Second
 
@@ -21,6 +16,7 @@ type Storage struct {
 	Comments domain.CommentsRepository
 	Follows  domain.FollowsRepository
 	Roles    domain.RolesRepository
+	Feed     domain.FeedRepository
 }
 
 func NewStorage(db *sql.DB) Storage {
@@ -30,6 +26,7 @@ func NewStorage(db *sql.DB) Storage {
 		Comments: &CommentStore{sqlc.New(db)},
 		Follows:  &FollowsStore{sqlc.New(db)},
 		Roles:    &RolesStore{queries: sqlc.New(db)},
+		Feed:     &FeedStore{sqlc.New(db)},
 	}
 }
 

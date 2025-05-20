@@ -19,10 +19,21 @@ func (NoResponse) Encode() ([]byte, string, error) {
 	return nil, "", nil
 }
 
+// Response represents a standardized API response envelope
+// @Description Standard API response wrapper
 type Response[T any] struct {
+	// The actual payload of the response
 	Data T `json:"data"`
 }
 
+// NewResponse creates a new Response with the given data
+func NewResponse[T any](data T) Response[T] {
+	return Response[T]{
+		Data: data,
+	}
+}
+
+// Encode implements the Encoder interface
 func (r Response[T]) Encode() ([]byte, string, error) {
 	data, err := json.Marshal(r)
 	return data, "application/json", err

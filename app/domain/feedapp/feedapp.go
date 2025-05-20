@@ -8,11 +8,12 @@ import (
 
 	"github.com/sergdort/Social/app/shared/errs"
 	"github.com/sergdort/Social/business/domain"
+	"github.com/sergdort/Social/foundation/slices"
 	"github.com/sergdort/Social/foundation/web"
 )
 
 type feedApp struct {
-	feedUseCase domain.FeedUseCase
+	feedUseCase domain.FeedRepository
 }
 
 // getUserFeedHandler godoc
@@ -29,7 +30,7 @@ type feedApp struct {
 //	@Param			sort_by	query		string	false	"Sort"
 //	@Param			tags	query		string	false	"Tags"
 //	@Param			search	query		string	false	"Search"
-//	@Success		200		{object}	[]domain.PostWithMetadata
+//	@Success		200		{object}	FeedData
 //	@Failure		400		{object}	error
 //	@Failure		500		{object}	error
 //	@Security		ApiKeyAuth
@@ -46,7 +47,7 @@ func (app *feedApp) getFeedHandler(ctx context.Context, r *http.Request) web.Enc
 	if err := domain.Validate.Struct(query); err != nil {
 		return errs.Newf(errs.InvalidArgument, err.Error())
 	}
-	userID, err := mid.GetUserID(ctx)
+	userID, err := mid.GetAuthUserID(ctx)
 	if err != nil {
 		return errs.Newf(errs.Internal, "feed query could not get user id %s", err.Error())
 	}
@@ -56,5 +57,6 @@ func (app *feedApp) getFeedHandler(ctx context.Context, r *http.Request) web.Enc
 		return errs.Newf(errs.Internal, "could not get user feed %s", err.Error())
 	}
 
-	return web.Response[[]domain.PostWithMetadata]{Data: feed}
+	feedItems := slices.Map(feed, toPostFeedItem)
+	return web.NewResponse(feedItems)
 }

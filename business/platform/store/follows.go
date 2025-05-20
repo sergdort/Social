@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"github.com/sergdort/Social/business/domain"
 	sqlc2 "github.com/sergdort/Social/business/platform/store/sqlc"
 )
 
@@ -34,7 +35,7 @@ func (s *FollowsStore) Unfollow(ctx context.Context, userID int64, followerID in
 	}
 
 	if rows == 0 {
-		return ErrNotFound
+		return domain.ErrNotFound
 	}
 
 	return nil

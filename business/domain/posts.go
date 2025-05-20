@@ -25,5 +25,4 @@ type PostsRepository interface {
 	GetByID(ctx context.Context, id int64) (*Post, error)
 	Delete(ctx context.Context, id int64) error
 	Update(ctx context.Context, post *Post) error
-	GetUserFeed(ctx context.Context, userId int64, query PaginatedFeedQuery) ([]PostWithMetadata, error)
 }

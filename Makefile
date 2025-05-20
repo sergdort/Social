@@ -18,7 +18,7 @@ seed:
 	@go run cmd/migrate/seed/main.go
 .PHONY: gen-docs
 gen-docs:
-	@swag init -g ./api/main.go -d cmd,app,business/domain && swag fmt
+	@swag init -g ./api/main.go -d cmd,app,business/domain,foundation && swag fmt
 .PHONY: gen-sqlc
 gen-sqlc:
 	@sqlc generate

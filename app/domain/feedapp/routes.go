@@ -9,7 +9,7 @@ import (
 
 type Config struct {
 	Auth        *domain.AuthUseCase
-	FeedUseCase domain.FeedUseCase
+	FeedUseCase domain.FeedRepository
 }
 
 func Routes(app *web.App, config Config) {

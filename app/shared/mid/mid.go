@@ -13,12 +13,12 @@ const (
 	userKey
 )
 
-func setUserID(ctx context.Context, userID int64) context.Context {
+func setAuthUserID(ctx context.Context, userID int64) context.Context {
 	return context.WithValue(ctx, userIDKey, userID)
 }
 
-// GetUserID returns the user id from the context.
-func GetUserID(ctx context.Context) (int64, error) {
+// GetAuthUserID returns the user id from the context.
+func GetAuthUserID(ctx context.Context) (int64, error) {
 	v, ok := ctx.Value(userIDKey).(int64)
 	if !ok {
 		return 0, errors.New("user id not found in context")

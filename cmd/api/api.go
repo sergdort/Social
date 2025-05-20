@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/sergdort/Social/app/domain/authapp"
 	"github.com/sergdort/Social/app/domain/feedapp"
+	"github.com/sergdort/Social/app/domain/postsapp"
 	"github.com/sergdort/Social/app/domain/usersapp"
 	"github.com/sergdort/Social/app/shared/mid"
 	"github.com/sergdort/Social/business/domain"
@@ -38,7 +39,8 @@ type application struct {
 type useCases struct {
 	Users *domain.UsersUseCase
 	Auth  *domain.AuthUseCase
-	Feed  domain.FeedUseCase
+	Feed  domain.FeedRepository
+	Posts domain.PostsRepository
 }
 
 type redisConfig struct {
@@ -152,8 +154,9 @@ func (app *application) mount(ctx context.Context, log *logger.Logger) http.Hand
 	//	})
 	//})
 
-	usersapp.Routes(webApp, usersapp.Config{Auth: app.useCase.Auth, UseCase: app.useCase.Users})
 	authapp.Routes(webApp, authapp.Config{UseCase: app.useCase.Auth})
+	usersapp.Routes(webApp, usersapp.Config{Auth: app.useCase.Auth, UseCase: app.useCase.Users})
+	postsapp.Routes(webApp, postsapp.Config{Auth: app.useCase.Auth, PostsRepo: app.useCase.Posts})
 	feedapp.Routes(webApp, feedapp.Config{Auth: app.useCase.Auth, FeedUseCase: app.useCase.Feed})
 	defer teardown(ctx)
 
